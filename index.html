@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Flappy Bird Clone</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #70c5ce; font-family: Arial, sans-serif; }
+        canvas { display: block; margin: 0 auto; background: #70c5ce; touch-action: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // ปรับขนาด Canvas ให้เต็มจอ
+    canvas.width = window.innerWidth > 400 ? 400 : window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // ตัวแปรหลักของเกม
+    let birdY = canvas.height / 2;
+    let birdX = 50;
+    let velocity = 0;
+    let gravity = 0.25;
+    let jump = -5;
+    let score = 0;
+    let gameActive = false;
+
+    // ท่อ
+    let pipes = [];
+    let pipeWidth = 50;
+    let pipeGap = 150;
+    let pipeSpeed = 2;
+
+    function createPipe() {
+        let minPipeHeight = 50;
+        let maxPipeHeight = canvas.height - pipeGap - minPipeHeight;
+        let height = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) + minPipeHeight;
+        pipes.push({ x: canvas.width, y: height });
+    }
+
+    function resetGame() {
+        birdY = canvas.height / 2;
+        velocity = 0;
+        pipes = [];
+        score = 0;
+        gameActive = true;
+        createPipe();
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        velocity += gravity;
+        birdY += velocity;
+
+        // ตรวจสอบการตกพื้นหรือเลยเพดาน
+        if (birdY + 20 > canvas.height || birdY < 0) {
+            gameActive = false;
+        }
+
+        // จัดการท่อ
+        if (pipes.length > 0 && pipes[0].x < -pipeWidth) {
+            pipes.shift();
+            score++;
+        }
+
+        if (pipes[pipes.length - 1].x < canvas.width - 200) {
+            createPipe();
+        }
+
+        pipes.forEach(pipe => {
+            pipe.x -= pipeSpeed;
+
+            // ตรวจสอบการชน
+            if (birdX + 20 > pipe.x && birdX < pipe.x + pipeWidth) {
+                if (birdY < pipe.y || birdY + 20 > pipe.y + pipeGap) {
+                    gameActive = false;
+                }
+            }
+        });
+    }
+
+    function draw() {
+        // ล้างหน้าจอ
+        ctx.fillStyle = "#70c5ce";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // วาดนก (สีเหลือง)
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(birdX, birdY, 25, 20);
+
+        // วาดท่อ (สีเขียว)
+        ctx.fillStyle = "#75c932";
+        pipes.forEach(pipe => {
+            ctx.fillRect(pipe.x, 0, pipeWidth, pipe.y); // ท่อบน
+            ctx.fillRect(pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height); // ท่อล่าง
+        });
+
+        // วาดคะแนน
+        ctx.fillStyle = "white";
+        ctx.font = "30px Arial";
+        ctx.fillText(`Score: ${score}`, 20, 50);
+
+        if (!gameActive) {
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.fillText("TAP TO START", canvas.width / 2, canvas.height / 2);
+        }
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // การควบคุม (รองรับทั้ง Click, Spacebar และ Touch)
+    function handleAction(e) {
+        if (e) e.preventDefault();
+        if (!gameActive) {
+            resetGame();
+        } else {
+            velocity = jump;
+        }
+    }
+
+    window.addEventListener("keydown", (e) => { if (e.code === "Space") handleAction(); });
+    window.addEventListener("mousedown", handleAction);
+    window.addEventListener("touchstart", handleAction, { passive: false });
+
+    loop();
+</script>
+
+</body>
+</html>
