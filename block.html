@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Block Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { background: #202028; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; }
+        #game-container { position: relative; margin-top: 20px; }
+        canvas { border: solid 2px #fff; background-color: #000; height: 70vh; aspect-ratio: 10 / 20; }
+        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; width: 100%; max-width: 300px; }
+        button { padding: 15px; font-size: 1.2rem; background: #444; color: white; border: none; border-radius: 8px; touch-action: manipulation; }
+        @media (min-width: 600px) { .controls { display: none; } } /* ซ่อนปุ่มบนคอม */
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="game-container">
+        <canvas id="tetris"></canvas>
+    </div>
+
+    <div class="controls">
+        <button onclick="playerMove(-1)">◀</button>
+        <button onclick="playerRotate(1)">↻</button>
+        <button onclick="playerMove(1)">▶</button>
+        <div></div>
+        <button onclick="playerDrop()">▼</button>
+        <div></div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
