@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flappy Bird - Paravee</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Kanit', sans-serif; background: #4ec0ca; display: flex; flex-direction: column; align-items: center; }
+        canvas { display: block; background: #70c5ce; border: 4px solid #fff; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); cursor: pointer; }
+        
+        /* หน้าเมนูผู้จัดทำ */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 10; text-align: center;
+        }
+        .profile-card {
+            background: white; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 2px solid #4ec0ca;
+        }
+        h1 { color: #2c3e50; margin: 0; font-size: 24px; }
+        p { color: #7f8c8d; font-size: 18px; margin: 10px 0; }
+        
+        .btn-start {
+            margin-top: 20px; padding: 15px 40px; font-size: 20px;
+            background: #ff9d00; color: white; border: none;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn-start:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <div class="profile-card">
+            <h1>เกม Flappy Bird</h1>
+            <p>ผู้จัดทำ</p>
+            <h2 style="color: #4ec0ca;">ด.ญ.ปารวีย์ ศรีสวัสดิ์</h2>
+            <p>ชั้น ม.2/2 เลขที่ 25</p>
+            <button class="btn-start" onclick="startGame()">กดเพื่อเริ่มเกม</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const startScreen = document.getElementById("start-screen");
+
+        canvas.width = window.innerWidth > 400 ? 360 : window.innerWidth - 20;
+        canvas.height = 550;
+
+        // ตั้งค่าตัวเกม
+        let bird, pipes, frame, score, gameRunning;
+        const gravity = 0.5;
+        const lift = -8;
+        const pipeWidth = 50;
+        const pipeGap = 160; // ระยะห่างระหว่างเสาบน-ล่าง (กว้างขึ้นให้เล่นง่าย)
+        const pipeDistance = 180; // ระยะห่างระหว่างแต่ละเสา
+
+        function init() {
+            bird = { x: 50, y: 250, w: 30, h: 22, velocity: 0 };
+            pipes = [];
+            frame = 0;
+            score = 0;
+            gameRunning = false;
+        }
+
+        function startGame() {
+            startScreen.style.display = "none";
+            init();
+            gameRunning = true;
+            animate();
+        }
+
+        function createPipe() {
+            let minPipeHeight = 50;
+            let range = canvas.height - pipeGap - (minPipeHeight * 2);
+            let topHeight = Math.floor(Math.random() * range) + minPipeHeight;
+            pipes.push({ x: canvas.width, top: topHeight });
+        }
+
+        function jump() {
+            if (gameRunning) bird.velocity = lift;
+        }
+
+        function animate() {
+            if (!gameRunning) return;
+
+            // พื้นหลัง
+            ctx.fillStyle = "#70c5ce";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // วาดนก (สี่เหลี่ยมสีเหลือง)
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+            ctx.fillStyle = "#f1c40f";
+            ctx.fillRect(bird.x, bird.y, bird.w, bird.h);
+
+            // จัดการท่อ
+            if (frame % pipeDistance === 0) createPipe();
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 2.5;
+
+                ctx.fillStyle = "#2ecc71";
+                // ท่อบน
+                ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                // ท่อล่าง
+                ctx.fillRect(pipes[i].x, pipes[i].top + pipeGap, pipeWidth, canvas.height);
+
+                // ตรวจการชน
+                if (
+                    bird.x < pipes[i].x + pipeWidth &&
+                    bird.x + bird.w > pipes[i].x &&
+                    (bird.y < pipes[i].top || bird.y + bird.h > pipes[i].top + pipeGap)
+                ) {
+                    gameOver();
+                }
+
+                // นับคะแนน
+                if (pipes[i].x + pipeWidth === bird.x) score++;
+
+                if (pipes[i].x + pipeWidth < 0) pipes.splice(i, 1);
+            }
+
+            // ตกพื้นหรือชนเพดาน
+            if (bird.y + bird.h > canvas.height || bird.y < 0) gameOver();
+
+            // แสดงคะแนน
+            ctx.fillStyle = "white";
+            ctx.font = "bold 30px Arial";
+            ctx.fillText(score, canvas.width/2 - 10, 50);
+
+            frame++;
+            requestAnimationFrame(animate);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            startScreen.style.display = "flex";
+            document.querySelector('h1').innerText = "Game Over! สู้ใหม่นะ";
+            document.querySelector('.btn-start').innerText = "เล่นอีกครั้ง";
+        }
+
+        // การควบคุม (คีย์บอร์ด + ทัช)
+        window.addEventListener("keydown", (e) => { if (e.code === "Space") jump(); });
+        canvas.addEventListener("touchstart", (e) => { jump(); e.preventDefault(); }, {passive: false});
+        canvas.addEventListener("mousedown", () => { jump(); });
+
+        init();
+    </script>
+</body>
+</html>
