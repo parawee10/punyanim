@@ -1,356 +1,308 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Shooter Student Project</title>
-    <style>
-        body {
-            margin: 0;
-            background-color: #222;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-            font-family: sans-serif;
-            touch-action: none;
-        }
-        #game-container {
-            position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        canvas {
-            background-color: #333;
-            display: block;
-            border: 2px solid #555;
-            max-width: 100vw;
-            max-height: 80vh;
-        }
-        .ui {
-            color: white;
-            padding: 10px;
-            text-align: center;
-            width: 100%;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Bubble Shooter + Aim Line</title>
+<style>
+    body {
+        margin: 0;
+        background: linear-gradient(#1e1e2f, #2b2b45);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: sans-serif;
+    }
+    canvas {
+        background: #111;
+        border-radius: 12px;
+        touch-action: none;
+    }
+</style>
 </head>
 <body>
 
-<div class="ui">
-    <div id="score">คะแนน: 0 | ยิงไปแล้ว: 0/7</div>
-</div>
-
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-</div>
+<canvas id="game" width="360" height="600"></canvas>
 
 <script>
-/** * ตั้งค่าเริ่มต้นของเกม
- */
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreElement = document.getElementById('score');
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-// ขนาดจอเกม
-canvas.width = 400;
-canvas.height = 600;
+const W = canvas.width;
+const H = canvas.height;
 
-const ROWS = 12;      // จำนวนแถวสูงสุด
-const COLS = 8;       // จำนวนคอลัมน์
-const RADIUS = 25;    // รัศมีลูกบอล
-const OFFSET_X = 25;  // ระยะห่างจากขอบซ้าย
-const OFFSET_Y = 25;  // ระยะห่างจากขอบบน
-const COLORS = ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E040FB', '#FF9800'];
-const DEADLINE_Y = canvas.height - 80; // เส้นจำกัดด้านล่าง
+const R = 14;
+const COLS = Math.floor(W / (R * 2));
+const COLORS = ["red", "yellow", "lime", "cyan", "magenta"];
+const BOTTOM_LINE = H - 120;
 
 let grid = [];
+let currentBall;
+let shots = 0;
 let score = 0;
-let shotsFired = 0;
-let currentBubble = null;
-let isShooting = false;
 let gameOver = false;
 
-// พิกัดปืน (กึ่งกลางล่าง)
-const shooterPos = { x: canvas.width / 2, y: canvas.height - 40 };
+let aiming = false;
+let aimX = 0;
+let aimY = 0;
 
-/**
- * สร้างตารางลูกบอลเริ่มต้น
- */
-function initGrid() {
+// ===== เริ่มเกม =====
+function init() {
     grid = [];
-    for (let r = 0; r < ROWS; r++) {
-        grid[r] = [];
-        for (let c = 0; c < COLS; c++) {
-            if (r < 4) { // เริ่มต้นมี 4 แถว
-                grid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
-            } else {
-                grid[r][c] = null;
-            }
-        }
-    }
+    shots = 0;
+    score = 0;
+    gameOver = false;
+    addRow();
+    addRow();
+    spawnBall();
 }
 
-/**
- * สร้างลูกบอลที่จะยิง
- */
-function createNewBubble() {
-    currentBubble = {
-        x: shooterPos.x,
-        y: shooterPos.y,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+// ===== เพิ่มแถว =====
+function addRow() {
+    const row = [];
+    for (let i = 0; i < COLS; i++) {
+        row.push({
+            x: R + i * R * 2,
+            y: R,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)]
+        });
+    }
+    grid.unshift(row);
+}
+
+// ===== เลื่อนลง =====
+function shiftDown() {
+    let moved = 0;
+    const id = setInterval(() => {
+        grid.flat().forEach(b => b.y += 2);
+        moved += 2;
+        if (moved >= R * 2) {
+            clearInterval(id);
+            checkGameOver();
+        }
+    }, 16);
+}
+
+// ===== ลูกปืน =====
+function spawnBall() {
+    currentBall = {
+        x: W / 2,
+        y: H - 60,
         vx: 0,
-        vy: 0
+        vy: 0,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        moving: false
     };
 }
 
-/**
- * วาดลูกบอล
- */
-function drawBubble(x, y, color) {
-    if (!color) return;
-    ctx.beginPath();
-    ctx.arc(x, y, RADIUS - 2, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    // เพิ่มมิติแสงเงาเล็กน้อย
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.closePath();
+// ===== ยิง =====
+function shoot(tx, ty) {
+    if (currentBall.moving || gameOver) return;
+
+    const dx = tx - currentBall.x;
+    const dy = ty - currentBall.y;
+    const len = Math.hypot(dx, dy);
+
+    currentBall.vx = dx / len * 6;
+    currentBall.vy = dy / len * 6;
+    currentBall.moving = true;
 }
 
-/**
- * หาระยะห่างระหว่างจุด 2 จุด
- */
-function getDistance(x1, y1, x2, y2) {
-    return Math.sqrt((x2 - x1)**2 + (y2 - y1)**2);
-}
-
-/**
- * เมื่อมีการยิงและบอลกระทบ/ติดผนัง
- */
-function snapToGrid(bubble) {
-    let bestR = 0, bestC = 0;
-    let minDist = 9999;
-
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            let posX = c * (RADIUS * 2) + OFFSET_X + (r % 2 === 1 ? RADIUS : 0);
-            let posY = r * (RADIUS * 2) + OFFSET_Y;
-            let d = getDistance(bubble.x, bubble.y, posX, posY);
-            if (d < minDist) {
-                minDist = d;
-                bestR = r;
-                bestC = c;
-            }
+// ===== ตรวจชน =====
+function checkCollision() {
+    for (let b of grid.flat()) {
+        const d = Math.hypot(currentBall.x - b.x, currentBall.y - b.y);
+        if (d < R * 2) {
+            snapBall();
+            return;
         }
     }
-
-    grid[bestR][bestC] = bubble.color;
-    checkMatch(bestR, bestC);
-    
-    shotsFired++;
-    if (shotsFired >= 7) {
-        addNewRow();
-        shotsFired = 0;
-    }
-    
-    checkGameOver();
-    if (!gameOver) createNewBubble();
-    isShooting = false;
+    if (currentBall.y <= R) snapBall();
 }
 
-/**
- * ตรวจสอบลูกบอลสีเดียวกันที่ติดกัน (ใช้ระบบ Flood Fill)
- */
-function checkMatch(row, col) {
-    let color = grid[row][col];
-    let matches = [{r: row, c: col}];
-    let queue = [{r: row, c: col}];
-    let visited = new Set();
-    visited.add(row + "," + col);
+// ===== ติดลูก =====
+function snapBall() {
+    currentBall.moving = false;
 
-    while (queue.length > 0) {
-        let curr = queue.shift();
-        let neighbors = getNeighbors(curr.r, curr.c);
-        
-        for (let n of neighbors) {
-            if (n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < COLS) {
-                if (grid[n.r][n.c] === color && !visited.has(n.r + "," + n.c)) {
-                    visited.add(n.r + "," + n.c);
-                    matches.push(n);
-                    queue.push(n);
-                }
-            }
+    const row = Math.round((currentBall.y - R) / (R * 2));
+    const col = Math.round((currentBall.x - R) / (R * 2));
+
+    if (!grid[row]) grid[row] = [];
+    grid[row].push({
+        x: R + col * R * 2,
+        y: R + row * R * 2,
+        color: currentBall.color
+    });
+
+    checkMatch(row);
+    shots++;
+
+    if (shots % 7 === 0) {
+        addRow();
+        shiftDown();
+    }
+
+    spawnBall();
+}
+
+// ===== ตรวจ 3 ลูก =====
+function checkMatch(row) {
+    const r = grid[row];
+    if (!r) return;
+
+    const count = {};
+    r.forEach(b => count[b.color] = (count[b.color] || 0) + 1);
+
+    for (let c in count) {
+        if (count[c] >= 3) {
+            grid[row] = r.filter(b => b.color !== c);
+            score += count[c] * 10;
         }
     }
-
-    if (matches.length >= 3) {
-        matches.forEach(m => grid[m.r][m.c] = null);
-        score += matches.length * 10;
-    }
 }
 
-/**
- * หาตำแหน่งลูกบอลข้างเคียง (รองรับแถวแบบสลับฟันปลา)
- */
-function getNeighbors(r, c) {
-    let neighbors = [];
-    let odd = r % 2 === 1;
-    neighbors.push({r: r, c: c-1}, {r: r, c: c+1}, {r: r-1, c: c}, {r: r+1, c: c});
-    neighbors.push({r: r-1, c: odd ? c+1 : c-1}, {r: r+1, c: odd ? c+1 : c-1});
-    return neighbors;
-}
-
-/**
- * เพิ่มแถวใหม่จากด้านบน
- */
-function addNewRow() {
-    // เลื่อนแถวลงมา
-    for (let r = ROWS - 1; r > 0; r--) {
-        grid[r] = [...grid[r-1]];
-    }
-    // เพิ่มแถวใหม่ที่แถว 0
-    grid[0] = [];
-    for (let c = 0; c < COLS; c++) {
-        grid[0][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
-    }
-}
-
+// ===== Game Over =====
 function checkGameOver() {
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (grid[r][c]) {
-                let posY = r * (RADIUS * 2) + OFFSET_Y;
-                if (posY >= DEADLINE_Y - RADIUS) {
-                    gameOver = true;
-                }
-            }
+    for (let b of grid.flat()) {
+        if (b.y + R >= BOTTOM_LINE) {
+            gameOver = true;
+            setTimeout(init, 2000);
+            break;
         }
     }
 }
 
-/**
- * การวาดหน้าจอหลัก
- */
-function update() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // วาดเส้นตาย (Deadline)
-    ctx.strokeStyle = "red";
-    ctx.setLineDash([5, 5]);
+// ===== วาดลูก =====
+function drawBall(b) {
     ctx.beginPath();
-    ctx.moveTo(0, DEADLINE_Y);
-    ctx.lineTo(canvas.width, DEADLINE_Y);
+    ctx.arc(b.x, b.y, R, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+}
+
+// ===== เส้นเล็ง =====
+function drawAimLine() {
+    if (!aiming || currentBall.moving) return;
+
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = "#aaa";
+    ctx.beginPath();
+    ctx.moveTo(currentBall.x, currentBall.y);
+
+    let dx = aimX - currentBall.x;
+    let dy = aimY - currentBall.y;
+    let len = Math.hypot(dx, dy);
+    dx /= len;
+    dy /= len;
+
+    let x = currentBall.x;
+    let y = currentBall.y;
+
+    for (let i = 0; i < 60; i++) {
+        x += dx * 8;
+        y += dy * 8;
+
+        if (x < R || x > W - R) dx *= -1;
+
+        ctx.lineTo(x, y);
+        if (y < 0) break;
+    }
+
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+// ===== วาด =====
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // เส้นล่าง
+    ctx.strokeStyle = "red";
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, BOTTOM_LINE);
+    ctx.lineTo(W, BOTTOM_LINE);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // วาดตารางบอล
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            let posX = c * (RADIUS * 2) + OFFSET_X + (r % 2 === 1 ? RADIUS : 0);
-            let posY = r * (RADIUS * 2) + OFFSET_Y;
-            drawBubble(posX, posY, grid[r][c]);
-        }
-    }
+    grid.flat().forEach(drawBall);
+    drawBall(currentBall);
+    drawAimLine();
 
-    // อัปเดตการเคลื่อนที่ของลูกบอลที่ยิง
-    if (isShooting && currentBubble) {
-        currentBubble.x += currentBubble.vx;
-        currentBubble.y += currentBubble.vy;
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Score: " + score, 10, H - 20);
 
-        // ชนขอบซ้าย-ขวา
-        if (currentBubble.x - RADIUS <= 0 || currentBubble.x + RADIUS >= canvas.width) {
-            currentBubble.vx *= -1;
-        }
-
-        // ชนเพดาน
-        if (currentBubble.y - RADIUS <= 0) {
-            snapToGrid(currentBubble);
-        }
-
-        // ตรวจสอบการชนกับบอลในกริต
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                if (grid[r][c]) {
-                    let posX = c * (RADIUS * 2) + OFFSET_X + (r % 2 === 1 ? RADIUS : 0);
-                    let posY = r * (RADIUS * 2) + OFFSET_Y;
-                    if (getDistance(currentBubble.x, currentBubble.y, posX, posY) < RADIUS * 1.5) {
-                        snapToGrid(currentBubble);
-                        break;
-                    }
-                }
-            }
-            if (!isShooting) break;
-        }
-        drawBubble(currentBubble.x, currentBubble.y, currentBubble.color);
-    } else if (!gameOver) {
-        drawBubble(shooterPos.x, shooterPos.y, currentBubble.color);
-    }
-
-    // แสดงข้อความ Game Over
     if (gameOver) {
         ctx.fillStyle = "rgba(0,0,0,0.7)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.font = "40px Arial";
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#fff";
+        ctx.font = "28px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-        ctx.font = "20px Arial";
-        ctx.fillText("คลิกเพื่อเริ่มใหม่", canvas.width/2, canvas.height/2 + 40);
-    }
-
-    scoreElement.innerText = `คะแนน: ${score} | ยิงไปแล้ว: ${shotsFired}/7`;
-    requestAnimationFrame(update);
-}
-
-/**
- * การควบคุมการยิง (รองรับทั้ง Click และ Touch)
- */
-function handleInput(e) {
-    if (gameOver) {
-        initGrid();
-        score = 0;
-        shotsFired = 0;
-        gameOver = false;
-        createNewBubble();
-        return;
-    }
-
-    if (isShooting) return;
-
-    let rect = canvas.getBoundingClientRect();
-    let clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-    let clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-    
-    let mouseX = clientX - rect.left;
-    let mouseY = clientY - rect.top;
-
-    // คำนวณทิศทาง
-    let angle = Math.atan2(mouseY - shooterPos.y, mouseX - shooterPos.x);
-    let speed = 8;
-    currentBubble.vx = Math.cos(angle) * speed;
-    currentBubble.vy = Math.sin(angle) * speed;
-
-    // ยิงขึ้นข้างบนเท่านั้น
-    if (currentBubble.vy < 0) {
-        isShooting = true;
+        ctx.fillText("GAME OVER", W / 2, H / 2);
+        ctx.textAlign = "left";
     }
 }
 
-window.addEventListener('mousedown', handleInput);
-window.addEventListener('touchstart', (e) => {
-    handleInput(e);
-    e.preventDefault();
-}, {passive: false});
+// ===== Update =====
+function update() {
+    if (currentBall.moving) {
+        currentBall.x += currentBall.vx;
+        currentBall.y += currentBall.vy;
 
-// เริ่มเกม
-initGrid();
-createNewBubble();
-update();
+        if (currentBall.x < R || currentBall.x > W - R) {
+            currentBall.vx *= -1;
+        }
+        checkCollision();
+    }
+}
 
+// ===== Loop =====
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// ===== Input =====
+function getPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX || e.touches[0].clientX) - r.left,
+        y: (e.clientY || e.touches[0].clientY) - r.top
+    };
+}
+
+canvas.addEventListener("mousedown", e => {
+    aiming = true;
+    const p = getPos(e);
+    aimX = p.x; aimY = p.y;
+});
+canvas.addEventListener("mousemove", e => {
+    if (!aiming) return;
+    const p = getPos(e);
+    aimX = p.x; aimY = p.y;
+});
+canvas.addEventListener("mouseup", e => {
+    aiming = false;
+    shoot(aimX, aimY);
+});
+
+canvas.addEventListener("touchstart", e => {
+    aiming = true;
+    const p = getPos(e);
+    aimX = p.x; aimY = p.y;
+});
+canvas.addEventListener("touchmove", e => {
+    const p = getPos(e);
+    aimX = p.x; aimY = p.y;
+});
+canvas.addEventListener("touchend", () => {
+    aiming = false;
+    shoot(aimX, aimY);
+});
+
+init();
+loop();
 </script>
 </body>
 </html>
