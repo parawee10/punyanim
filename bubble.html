@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Shooter Mobile</title>
+    <title>Bubble Shooter Perfect Smooth</title>
     <style>
         body { 
-            margin: 0; background: #111; display: flex; flex-direction: column; 
+            margin: 0; background: #121212; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; height: 100vh; 
             color: white; font-family: sans-serif; overflow: hidden; touch-action: none; 
         }
-        .ui { width: 360px; display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 1rem; }
+        .ui { width: 360px; display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
         canvas { 
-            background: #000; border: 2px solid #444; 
-            max-width: 95vw; max-height: 75vh; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background: #000; border: 3px solid #333; border-radius: 10px;
+            max-width: 95vw; max-height: 75vh; box-shadow: 0 0 25px rgba(0,0,0,0.8);
         }
+        #score { color: #00f2fe; }
+        #next-push { color: #ff54b0; }
     </style>
 </head>
 <body>
 
     <div class="ui">
-        <span>คะแนน: <span id="score">0</span></span>
-        <span>ยิงอีก: <span id="next-push">7</span></span>
+        <span>Score: <span id="score">0</span></span>
+        <span>Next Push: <span id="next-push">7</span></span>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -30,19 +32,21 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // ปรับขนาดให้เหมาะกับมือถือ (Ratio 9:16)
         canvas.width = 360;
         canvas.height = 540;
 
         const COLORS = ['#FF355E', '#50BFE6', '#66FF66', '#FFFF66', '#FF6037'];
-        const bubbleRadius = 18;
+        const bubbleRadius = 17; // ปรับขนาดเล็กลงนิดหน่อยให้พอดีจอ
         const cols = 10;
-        const deadLineY = canvas.height - 80; // เส้นตาย
+        const deadLineY = canvas.height - 80;
         
         let score = 0;
         let shotCount = 0;
         const pushLimit = 7;
+        
         let grid = [];
+        let visualOffset = 0; // ใช้สำหรับทำ Animation ตอนเลื่อนลง
+        let isPushing = false;
 
         function createNewRow(isOffset) {
             let row = [];
@@ -50,7 +54,7 @@
                 row.push({
                     active: true,
                     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                    isOffset: isOffset // เก็บค่าไว้ว่าแถวนี้ต้องเยื้องหรือไม่
+                    isOffset: isOffset
                 });
             }
             return row;
@@ -60,10 +64,7 @@
             grid = [];
             score = 0;
             shotCount = 0;
-            document.getElementById('score').innerText = score;
-            document.getElementById('next-push').innerText = pushLimit;
-            // เริ่มต้น 4 แถว
-            for (let r = 0; r < 4; r++) {
+            for (let r = 0; r < 5; r++) {
                 grid.push(createNewRow(r % 2 !== 0));
             }
         }
@@ -73,28 +74,37 @@
             y: canvas.height - 35,
             color: COLORS[0],
             active: false,
-            dx: 0, dy: 0, speed: 15, angle: 0
+            dx: 0, dy: 0, speed: 18, angle: 0
         };
 
         function getBubblePos(r, c) {
-            // ใช้ค่า isOffset ที่เก็บไว้ในแถวนั้นๆ เพื่อไม่ให้มันสลับไปมาตอนเลื่อนลง
+            // ปรับระยะห่างให้ลูกบอลอยู่กลางจอพอดี (Padding ซ้ายขวา)
+            const padding = 10;
             let xOffset = (grid[r] && grid[r][c] && grid[r][c].isOffset) ? bubbleRadius : 0;
             return {
-                x: c * (bubbleRadius * 2) + bubbleRadius + xOffset,
-                y: r * (bubbleRadius * 1.7) + bubbleRadius + 10
+                x: padding + c * (bubbleRadius * 2) + bubbleRadius + xOffset,
+                y: r * (bubbleRadius * 1.7) + bubbleRadius + 10 + visualOffset
             };
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // วาดเส้นตาย (Deadline)
+            // Animation เลื่อนลง
+            if (isPushing) {
+                visualOffset += 2; // ความเร็วในการไหลลง
+                if (visualOffset >= bubbleRadius * 1.7) {
+                    completePush();
+                }
+            }
+
+            // วาดเส้นตาย
             ctx.beginPath();
             ctx.moveTo(0, deadLineY);
             ctx.lineTo(canvas.width, deadLineY);
-            ctx.strokeStyle = "red";
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.6)";
             ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
+            ctx.setLineDash([8, 5]);
             ctx.stroke();
             ctx.setLineDash([]);
 
@@ -105,10 +115,11 @@
                         let pos = getBubblePos(r, c);
                         drawBubble(pos.x, pos.y, grid[r][c].color);
                         
-                        // เช็ค Game Over: ถ้าลูกบอลที่ active แตะเส้นตาย
+                        // Game Over Check
                         if (pos.y + bubbleRadius >= deadLineY) {
-                            alert("จบเกม! ลูกบอลถึงเส้นตาย");
+                            alert("Game Over! คุณทำคะแนนได้: " + score);
                             initGrid();
+                            resetShooter();
                             return;
                         }
                     }
@@ -116,11 +127,11 @@
             }
 
             // เส้นเล็ง
-            if (isPointerDown && !shooter.active) {
+            if (isPointerDown && !shooter.active && !isPushing) {
                 ctx.beginPath();
                 ctx.moveTo(shooter.x, shooter.y);
-                ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 100, shooter.y + Math.sin(shooter.angle) * 100);
-                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 80, shooter.y + Math.sin(shooter.angle) * 80);
+                ctx.strokeStyle = "rgba(255,255,255,0.4)";
                 ctx.stroke();
             }
 
@@ -141,12 +152,13 @@
             ctx.beginPath();
             ctx.arc(x, y, bubbleRadius - 2, 0, Math.PI * 2);
             ctx.fillStyle = color;
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
             ctx.fill();
-            // เงาไฮไลท์
+            
+            // แสงเงาสามมิติ
             let grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, bubbleRadius);
-            grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
             grad.addColorStop(1, 'rgba(0,0,0,0.1)');
             ctx.fillStyle = grad;
             ctx.fill();
@@ -165,18 +177,15 @@
                     }
                 }
             }
-
-            if (hit || shooter.y < bubbleRadius) {
-                stickBubble();
-            }
+            if (hit || shooter.y < bubbleRadius) stickBubble();
         }
 
         function stickBubble() {
-            // หาช่องที่ใกล้ที่สุด
             let best = { r: 0, c: 0, dist: 9999 };
-            // เพิ่มแถวว่างรอไว้ถ้าจำเป็น
-            if (grid.length < 20) {
-                grid.push(new Array(cols).fill(null).map((_, i) => ({active: false, color: '', isOffset: grid[grid.length-1].isOffset === false})));
+            // เตรียมแถวว่าง
+            if (grid.length < 22) {
+                grid.push(new Array(cols).fill(null).map(() => ({active: false, color: '', isOffset: false})));
+                for(let r=0; r<grid.length; r++) grid[r].forEach((b,i) => b.isOffset = (r % 2 !== 0));
             }
 
             for (let r = 0; r < grid.length; r++) {
@@ -191,18 +200,27 @@
 
             grid[best.r][best.c].active = true;
             grid[best.r][best.c].color = shooter.color;
-            
             checkMatch(best.r, best.c);
             
             shotCount++;
             if (shotCount >= pushLimit) {
-                // เพิ่มแถวใหม่ 1 แถวข้างบน
-                let newIsOffset = !grid[0].isOffset;
-                grid.unshift(createNewRow(newIsOffset));
+                isPushing = true; // เริ่ม Animation การไหลลง
                 shotCount = 0;
             }
             document.getElementById('next-push').innerText = pushLimit - shotCount;
             resetShooter();
+        }
+
+        function completePush() {
+            isPushing = false;
+            visualOffset = 0; // รีเซ็ตตำแหน่งภาพ
+            // แทรกแถวใหม่ที่ข้อมูลจริง
+            let newIsOffset = !grid[0].isOffset;
+            grid.unshift(createNewRow(newIsOffset));
+            // จัดการค่า isOffset ของทุกแถวใหม่ให้ถูกต้องตามลำดับ
+            for(let r=0; r<grid.length; r++) {
+                grid[r].forEach(b => b.isOffset = (r % 2 !== 0));
+            }
         }
 
         function checkMatch(startR, startC) {
@@ -217,8 +235,7 @@
                 visited.add(key);
                 if (grid[curr.r] && grid[curr.r][curr.c] && grid[curr.r][curr.c].active && grid[curr.r][curr.c].color === color) {
                     matches.push(curr);
-                    let rowOffset = grid[curr.r][curr.c].isOffset;
-                    let off = rowOffset ? 0 : -1;
+                    let off = grid[curr.r][curr.c].isOffset ? 0 : -1;
                     let neighbors = [
                         {r:curr.r, c:curr.c-1}, {r:curr.r, c:curr.c+1},
                         {r:curr.r-1, c:curr.c+off}, {r:curr.r-1, c:curr.c+off+1},
@@ -251,7 +268,7 @@
         canvas.addEventListener('pointerdown', (e) => { isPointerDown = true; updateInput(e); });
         canvas.addEventListener('pointermove', (e) => { if (isPointerDown) updateInput(e); });
         canvas.addEventListener('pointerup', () => { 
-            if (isPointerDown && !shooter.active) {
+            if (isPointerDown && !shooter.active && !isPushing) {
                 shooter.dx = Math.cos(shooter.angle) * shooter.speed;
                 shooter.dy = Math.sin(shooter.angle) * shooter.speed;
                 shooter.active = true;
