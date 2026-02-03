@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Shooter Smooth Endless</title>
+    <title>Classic Bubble Shooter Smooth</title>
     <style>
         body { 
-            margin: 0; background: #1a1a1a; display: flex; flex-direction: column; 
+            margin: 0; background: #121212; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; height: 100vh; 
-            color: white; font-family: sans-serif; overflow: hidden; touch-action: none; 
+            color: white; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; touch-action: none; 
         }
-        .ui { width: 440px; display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.2rem; font-weight: bold; }
+        .ui { width: 440px; display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: bold; font-size: 1.3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
         canvas { 
-            background: #000; border: 4px solid #333; border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); max-width: 95vw; max-height: 80vh; 
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%); 
+            border: 6px solid #333; border-radius: 15px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); max-width: 95vw; max-height: 80vh; 
         }
-        #score { color: #50BFE6; }
-        #next-push { color: #FF355E; }
+        #score { color: #00f2fe; }
+        #next-push { color: #ff54b0; }
     </style>
 </head>
 <body>
 
     <div class="ui">
         <span>Score: <span id="score">0</span></span>
-        <span>Next: <span id="next-push">7</span></span>
+        <span>Push In: <span id="next-push">7</span></span>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -41,10 +42,8 @@
         
         let score = 0;
         let shotCount = 0;
-        const pushLimit = 7; // ปรับเป็น 7 รอบตามโจทย์
-
-        // ระบบ Animation การเลื่อนลง
-        let visualOffset = 0; // ระยะที่เลื่อนลงมา (0 ถึง 1.7 * bubbleRadius)
+        const pushLimit = 7; 
+        let visualOffset = 0; 
         let isAnimatingPush = false;
 
         let grid = [];
@@ -53,36 +52,33 @@
             for (let r = 0; r < rows; r++) {
                 grid[r] = [];
                 for (let c = 0; c < cols; c++) {
-                    grid[r][c] = { r, c, color: COLORS[Math.floor(Math.random() * COLORS.length)], active: r < 5 };
+                    grid[r][c] = { 
+                        active: r < 5, 
+                        color: COLORS[Math.floor(Math.random() * COLORS.length)] 
+                    };
                 }
             }
         }
 
-        let shooter = { x: canvas.width / 2, y: canvas.height - 50, color: COLORS[0], active: false, dx: 0, dy: 0, speed: 22 };
+        let shooter = { x: canvas.width / 2, y: canvas.height - 50, color: COLORS[0], active: false, dx: 0, dy: 0, speed: 20, angle: 0 };
 
         function getBubblePos(r, c) {
             let xOffset = (r % 2 === 0) ? 0 : bubbleRadius;
             let yBase = r * (bubbleRadius * 1.7) + bubbleRadius + 15;
-            // เพิ่ม visualOffset เข้าไปเพื่อให้มันดูค่อยๆ ไหลลงมา
-            return {
-                x: c * (bubbleRadius * 2) + bubbleRadius + xOffset,
-                y: yBase + visualOffset 
-            };
+            return { x: c * (bubbleRadius * 2) + bubbleRadius + xOffset, y: yBase + visualOffset };
         }
 
         function draw() {
-            ctx.fillStyle = '#0b0b0b';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ถ้ากำลังเล่น Animation ให้ค่อยๆ เพิ่ม visualOffset
             if (isAnimatingPush) {
-                visualOffset += 2; // ความเร็วในการไหลลง
+                visualOffset += 3; // สปีดการเลื่อนลง
                 if (visualOffset >= bubbleRadius * 1.7) {
-                    finalizePush(); // เมื่อไหลจนครบระยะ ให้เปลี่ยนข้อมูล Grid จริงๆ
+                    finalizePush();
                 }
             }
 
-            // วาดลูกบอล
+            // วาดลูกบอลในตาราง
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     if (grid[r][c].active) {
@@ -95,10 +91,10 @@
             // เส้นเล็ง
             if (isPointerDown && !shooter.active) {
                 ctx.beginPath();
-                ctx.setLineDash([5, 8]);
+                ctx.setLineDash([5, 10]);
                 ctx.moveTo(shooter.x, shooter.y);
                 ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 150, shooter.y + Math.sin(shooter.angle) * 150);
-                ctx.strokeStyle = "rgba(255,255,255,0.4)";
+                ctx.strokeStyle = "rgba(255,255,255,0.3)";
                 ctx.stroke();
                 ctx.setLineDash([]);
             }
@@ -115,12 +111,29 @@
         }
 
         function drawBubble(x, y, color) {
+            ctx.save();
+            // ใส่เงาพื้นหลังลูกบอล
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 4;
+
             ctx.beginPath();
             ctx.arc(x, y, bubbleRadius - 2, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            
+            // ใส่ไฮไลท์แสงตกกระทบ (ทำให้ดูเป็น 3D)
+            let gradient = ctx.createRadialGradient(x - 6, y - 6, 2, x, y, bubbleRadius);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
+            ctx.restore();
         }
 
         function handleCollision() {
@@ -156,27 +169,32 @@
                 document.getElementById('next-push').innerText = pushLimit - shotCount;
 
                 if (shotCount >= pushLimit) {
-                    isAnimatingPush = true; // เริ่มการเลื่อนลงแบบ Smooth
+                    isAnimatingPush = true;
                     shotCount = 0;
                 }
 
-                if (bestFit.r >= rows - 2) { alert("Game Over!"); initGrid(); score = 0; }
+                if (bestFit.r >= rows - 1) { 
+                    alert("Game Over! Score: " + score); 
+                    initGrid(); 
+                    score = 0; 
+                    document.getElementById('score').innerText = 0;
+                }
                 resetShooter();
             }
         }
 
         function finalizePush() {
             isAnimatingPush = false;
-            visualOffset = 0; // รีเซ็ตค่าการขยับภาพ
+            visualOffset = 0;
             
-            // ขยับข้อมูลจริงใน Array (เลื่อนลง 1 แถว)
+            // ขยับเฉพาะข้อมูล Active และ Color ลงมาแถวถัดไป (คงค่าเดิมไว้เป๊ะๆ)
             for (let r = rows - 1; r > 0; r--) {
                 for (let c = 0; c < cols; c++) {
                     grid[r][c].active = grid[r - 1][c].active;
                     grid[r][c].color = grid[r - 1][c].color;
                 }
             }
-            // เติมแถวใหม่ด้านบน
+            // เพิ่มแถวใหม่แค่แถวบนสุด (Row 0)
             for (let c = 0; c < cols; c++) {
                 grid[0][c].active = true;
                 grid[0][c].color = COLORS[Math.floor(Math.random() * COLORS.length)];
@@ -185,7 +203,7 @@
         }
 
         function checkMatch(startR, startC) {
-            let targetColor = grid[startR][startC].color;
+            let color = grid[startR][startC].color;
             let matches = [];
             let queue = [{r: startR, c: startC}];
             let visited = new Set();
@@ -194,7 +212,7 @@
                 let key = `${curr.r},${curr.c}`;
                 if (visited.has(key)) continue;
                 visited.add(key);
-                if (grid[curr.r] && grid[curr.r][curr.c] && grid[curr.r][curr.c].active && grid[curr.r][curr.c].color === targetColor) {
+                if (grid[curr.r] && grid[curr.r][curr.c] && grid[curr.r][curr.c].active && grid[curr.r][curr.c].color === color) {
                     matches.push(curr);
                     let rowOffset = curr.r % 2 === 0 ? -1 : 0;
                     let neighbors = [{r:curr.r, c:curr.c-1}, {r:curr.r, c:curr.c+1}, {r:curr.r-1, c:curr.c+rowOffset}, {r:curr.r-1, c:curr.c+rowOffset+1}, {r:curr.r+1, c:curr.c+rowOffset}, {r:curr.r+1, c:curr.c+rowOffset+1}];
