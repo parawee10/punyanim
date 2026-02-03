@@ -2,304 +2,324 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Bubble Shooter + Aim Line</title>
+<title>Hardcore Bubble Shooter</title>
 <style>
-    body {
-        margin: 0;
-        background: linear-gradient(#1e1e2f, #2b2b45);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        font-family: sans-serif;
-    }
-    canvas {
-        background: #111;
-        border-radius: 12px;
-        touch-action: none;
-    }
+body{
+    margin:0;
+    background:#0f1220;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+canvas{
+    background:radial-gradient(circle at top,#222,#000);
+    border-radius:14px;
+    touch-action:none;
+}
 </style>
 </head>
 <body>
 
-<canvas id="game" width="360" height="600"></canvas>
+<canvas id="c" width="360" height="600"></canvas>
 
 <script>
-const canvas = document.getElementById("game");
+const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
 const W = canvas.width;
 const H = canvas.height;
 
 const R = 14;
-const COLS = Math.floor(W / (R * 2));
-const COLORS = ["red", "yellow", "lime", "cyan", "magenta"];
-const BOTTOM_LINE = H - 120;
+const ROW_H = R * 1.73;
+const COLORS = ["#ff4d4d","#ffd93d","#4dff88","#4dd2ff","#c77dff"];
+const BOTTOM = H - 120;
 
 let grid = [];
-let currentBall;
 let shots = 0;
 let score = 0;
 let gameOver = false;
 
-let aiming = false;
-let aimX = 0;
-let aimY = 0;
+let ball;
+let aiming=false, aimX=0, aimY=0;
 
-// ===== เริ่มเกม =====
-function init() {
-    grid = [];
-    shots = 0;
-    score = 0;
-    gameOver = false;
-    addRow();
-    addRow();
+// ===== Utility =====
+function randColor(){
+    return COLORS[Math.floor(Math.random()*COLORS.length)];
+}
+
+// ===== Init =====
+function init(){
+    grid=[];
+    shots=0;
+    score=0;
+    gameOver=false;
+    for(let i=0;i<5;i++) addRow();
     spawnBall();
 }
 
-// ===== เพิ่มแถว =====
-function addRow() {
+// ===== Grid =====
+function addRow(){
     const row = [];
-    for (let i = 0; i < COLS; i++) {
+    const offset = grid.length % 2 === 0 ? R : R*2;
+    const cols = Math.floor((W-offset)/(R*2));
+    for(let c=0;c<cols;c++){
         row.push({
-            x: R + i * R * 2,
-            y: R,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)]
+            row:grid.length,
+            col:c,
+            x:offset + c*R*2,
+            y:R + grid.length*ROW_H,
+            color:randColor()
         });
     }
     grid.unshift(row);
+    grid.forEach((r,i)=>r.forEach(b=>{
+        b.row=i;
+        b.y = R + i*ROW_H;
+    }));
 }
 
-// ===== เลื่อนลง =====
-function shiftDown() {
-    let moved = 0;
-    const id = setInterval(() => {
-        grid.flat().forEach(b => b.y += 2);
-        moved += 2;
-        if (moved >= R * 2) {
+// ===== Shift Down =====
+function shiftDown(){
+    let moved=0;
+    const id=setInterval(()=>{
+        grid.flat().forEach(b=>b.y+=2);
+        moved+=2;
+        if(moved>=ROW_H){
             clearInterval(id);
             checkGameOver();
         }
-    }, 16);
+    },16);
 }
 
-// ===== ลูกปืน =====
-function spawnBall() {
-    currentBall = {
-        x: W / 2,
-        y: H - 60,
-        vx: 0,
-        vy: 0,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        moving: false
+// ===== Ball =====
+function spawnBall(){
+    ball={
+        x:W/2,
+        y:H-60,
+        vx:0, vy:0,
+        color:randColor(),
+        moving:false
     };
 }
 
-// ===== ยิง =====
-function shoot(tx, ty) {
-    if (currentBall.moving || gameOver) return;
-
-    const dx = tx - currentBall.x;
-    const dy = ty - currentBall.y;
-    const len = Math.hypot(dx, dy);
-
-    currentBall.vx = dx / len * 6;
-    currentBall.vy = dy / len * 6;
-    currentBall.moving = true;
+function shoot(x,y){
+    if(ball.moving||gameOver) return;
+    let dx=x-ball.x, dy=y-ball.y;
+    let len=Math.hypot(dx,dy);
+    ball.vx=dx/len*7;
+    ball.vy=dy/len*7;
+    ball.moving=true;
 }
 
-// ===== ตรวจชน =====
-function checkCollision() {
-    for (let b of grid.flat()) {
-        const d = Math.hypot(currentBall.x - b.x, currentBall.y - b.y);
-        if (d < R * 2) {
-            snapBall();
-            return;
-        }
-    }
-    if (currentBall.y <= R) snapBall();
-}
+// ===== Collision =====
+function snap(){
+    ball.moving=false;
+    let row=Math.round((ball.y-R)/ROW_H);
+    row=Math.max(0,row);
+    if(!grid[row]) grid[row]=[];
 
-// ===== ติดลูก =====
-function snapBall() {
-    currentBall.moving = false;
+    const offset = row%2===0?R:R*2;
+    let col=Math.round((ball.x-offset)/(R*2));
 
-    const row = Math.round((currentBall.y - R) / (R * 2));
-    const col = Math.round((currentBall.x - R) / (R * 2));
-
-    if (!grid[row]) grid[row] = [];
     grid[row].push({
-        x: R + col * R * 2,
-        y: R + row * R * 2,
-        color: currentBall.color
+        row,col,
+        x:offset+col*R*2,
+        y:R+row*ROW_H,
+        color:ball.color
     });
 
-    checkMatch(row);
+    resolve(row,col);
     shots++;
 
-    if (shots % 7 === 0) {
+    if(shots%7===0){
         addRow();
         shiftDown();
     }
-
     spawnBall();
 }
 
-// ===== ตรวจ 3 ลูก =====
-function checkMatch(row) {
-    const r = grid[row];
-    if (!r) return;
-
-    const count = {};
-    r.forEach(b => count[b.color] = (count[b.color] || 0) + 1);
-
-    for (let c in count) {
-        if (count[c] >= 3) {
-            grid[row] = r.filter(b => b.color !== c);
-            score += count[c] * 10;
+// ===== Neighbor =====
+function neighbors(b){
+    const dirsEven=[[0,-1],[0,1],[-1,-1],[-1,0],[1,-1],[1,0]];
+    const dirsOdd=[[0,-1],[0,1],[-1,0],[-1,1],[1,0],[1,1]];
+    const dirs=b.row%2===0?dirsEven:dirsOdd;
+    const list=[];
+    for(let d of dirs){
+        let r=b.row+d[0], c=b.col+d[1];
+        if(grid[r]){
+            let n=grid[r].find(x=>x.col===c);
+            if(n) list.push(n);
         }
     }
+    return list;
+}
+
+// ===== Match =====
+function resolve(r,c){
+    const start=grid[r].find(b=>b.col===c);
+    if(!start) return;
+
+    const stack=[start];
+    const group=[start];
+    const visited=new Set([start]);
+
+    while(stack.length){
+        const b=stack.pop();
+        for(let n of neighbors(b)){
+            if(!visited.has(n)&&n.color===start.color){
+                visited.add(n);
+                stack.push(n);
+                group.push(n);
+            }
+        }
+    }
+
+    if(group.length>=3){
+        score+=group.length*15;
+        group.forEach(b=>{
+            const row=grid[b.row];
+            row.splice(row.indexOf(b),1);
+        });
+        dropFloating();
+    }
+}
+
+// ===== Drop Floating =====
+function dropFloating(){
+    const connected=new Set();
+    const stack=[...grid[0]];
+
+    stack.forEach(b=>connected.add(b));
+    while(stack.length){
+        const b=stack.pop();
+        for(let n of neighbors(b)){
+            if(!connected.has(n)){
+                connected.add(n);
+                stack.push(n);
+            }
+        }
+    }
+
+    grid.forEach(row=>{
+        for(let i=row.length-1;i>=0;i--){
+            if(!connected.has(row[i])){
+                score+=5;
+                row.splice(i,1);
+            }
+        }
+    });
 }
 
 // ===== Game Over =====
-function checkGameOver() {
-    for (let b of grid.flat()) {
-        if (b.y + R >= BOTTOM_LINE) {
-            gameOver = true;
-            setTimeout(init, 2000);
-            break;
+function checkGameOver(){
+    for(let b of grid.flat()){
+        if(b.y+R>=BOTTOM){
+            gameOver=true;
+            setTimeout(init,2500);
+            return;
         }
     }
 }
 
-// ===== วาดลูก =====
-function drawBall(b) {
+// ===== Draw =====
+function drawBall(b){
+    const g=ctx.createRadialGradient(b.x-4,b.y-4,4,b.x,b.y,R);
+    g.addColorStop(0,"#fff");
+    g.addColorStop(1,b.color);
+    ctx.fillStyle=g;
     ctx.beginPath();
-    ctx.arc(b.x, b.y, R, 0, Math.PI * 2);
-    ctx.fillStyle = b.color;
+    ctx.arc(b.x,b.y,R,0,Math.PI*2);
     ctx.fill();
 }
 
-// ===== เส้นเล็ง =====
-function drawAimLine() {
-    if (!aiming || currentBall.moving) return;
-
-    ctx.setLineDash([6, 6]);
-    ctx.strokeStyle = "#aaa";
+function drawAim(){
+    if(!aiming||ball.moving) return;
+    ctx.setLineDash([6,6]);
+    ctx.strokeStyle="#aaa";
     ctx.beginPath();
-    ctx.moveTo(currentBall.x, currentBall.y);
-
-    let dx = aimX - currentBall.x;
-    let dy = aimY - currentBall.y;
-    let len = Math.hypot(dx, dy);
-    dx /= len;
-    dy /= len;
-
-    let x = currentBall.x;
-    let y = currentBall.y;
-
-    for (let i = 0; i < 60; i++) {
-        x += dx * 8;
-        y += dy * 8;
-
-        if (x < R || x > W - R) dx *= -1;
-
-        ctx.lineTo(x, y);
-        if (y < 0) break;
+    ctx.moveTo(ball.x,ball.y);
+    let dx=aimX-ball.x, dy=aimY-ball.y;
+    let len=Math.hypot(dx,dy);
+    dx/=len; dy/=len;
+    let x=ball.x, y=ball.y;
+    for(let i=0;i<80;i++){
+        x+=dx*8; y+=dy*8;
+        if(x<R||x>W-R) dx*=-1;
+        ctx.lineTo(x,y);
+        if(y<0) break;
     }
-
     ctx.stroke();
     ctx.setLineDash([]);
 }
 
-// ===== วาด =====
-function draw() {
-    ctx.clearRect(0, 0, W, H);
+function draw(){
+    ctx.clearRect(0,0,W,H);
 
-    // เส้นล่าง
-    ctx.strokeStyle = "red";
-    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle="red";
+    ctx.setLineDash([6,6]);
     ctx.beginPath();
-    ctx.moveTo(0, BOTTOM_LINE);
-    ctx.lineTo(W, BOTTOM_LINE);
+    ctx.moveTo(0,BOTTOM);
+    ctx.lineTo(W,BOTTOM);
     ctx.stroke();
     ctx.setLineDash([]);
 
     grid.flat().forEach(drawBall);
-    drawBall(currentBall);
-    drawAimLine();
+    drawBall(ball);
+    drawAim();
 
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Score: " + score, 10, H - 20);
+    ctx.fillStyle="#fff";
+    ctx.fillText("Score: "+score,10,H-20);
 
-    if (gameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.7)";
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "#fff";
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", W / 2, H / 2);
-        ctx.textAlign = "left";
-    }
-}
-
-// ===== Update =====
-function update() {
-    if (currentBall.moving) {
-        currentBall.x += currentBall.vx;
-        currentBall.y += currentBall.vy;
-
-        if (currentBall.x < R || currentBall.x > W - R) {
-            currentBall.vx *= -1;
-        }
-        checkCollision();
+    if(gameOver){
+        ctx.fillStyle="rgba(0,0,0,0.7)";
+        ctx.fillRect(0,0,W,H);
+        ctx.fillStyle="#fff";
+        ctx.font="28px sans-serif";
+        ctx.textAlign="center";
+        ctx.fillText("GAME OVER",W/2,H/2);
+        ctx.textAlign="left";
     }
 }
 
 // ===== Loop =====
-function loop() {
+function update(){
+    if(ball.moving){
+        ball.x+=ball.vx;
+        ball.y+=ball.vy;
+        if(ball.x<R||ball.x>W-R) ball.vx*=-1;
+
+        for(let b of grid.flat()){
+            if(Math.hypot(ball.x-b.x,ball.y-b.y)<R*2){
+                snap(); return;
+            }
+        }
+        if(ball.y<=R) snap();
+    }
+}
+
+function loop(){
     update();
     draw();
     requestAnimationFrame(loop);
 }
 
 // ===== Input =====
-function getPos(e) {
-    const r = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX || e.touches[0].clientX) - r.left,
-        y: (e.clientY || e.touches[0].clientY) - r.top
+function pos(e){
+    const r=canvas.getBoundingClientRect();
+    return{
+        x:(e.clientX||e.touches[0].clientX)-r.left,
+        y:(e.clientY||e.touches[0].clientY)-r.top
     };
 }
 
-canvas.addEventListener("mousedown", e => {
-    aiming = true;
-    const p = getPos(e);
-    aimX = p.x; aimY = p.y;
-});
-canvas.addEventListener("mousemove", e => {
-    if (!aiming) return;
-    const p = getPos(e);
-    aimX = p.x; aimY = p.y;
-});
-canvas.addEventListener("mouseup", e => {
-    aiming = false;
-    shoot(aimX, aimY);
-});
+canvas.addEventListener("mousedown",e=>{aiming=true;let p=pos(e);aimX=p.x;aimY=p.y;});
+canvas.addEventListener("mousemove",e=>{if(!aiming)return;let p=pos(e);aimX=p.x;aimY=p.y;});
+canvas.addEventListener("mouseup",()=>{aiming=false;shoot(aimX,aimY);});
 
-canvas.addEventListener("touchstart", e => {
-    aiming = true;
-    const p = getPos(e);
-    aimX = p.x; aimY = p.y;
-});
-canvas.addEventListener("touchmove", e => {
-    const p = getPos(e);
-    aimX = p.x; aimY = p.y;
-});
-canvas.addEventListener("touchend", () => {
-    aiming = false;
-    shoot(aimX, aimY);
-});
+canvas.addEventListener("touchstart",e=>{aiming=true;let p=pos(e);aimX=p.x;aimY=p.y;});
+canvas.addEventListener("touchmove",e=>{let p=pos(e);aimX=p.x;aimY=p.y;});
+canvas.addEventListener("touchend",()=>{aiming=false;shoot(aimX,aimY);});
 
 init();
 loop();
