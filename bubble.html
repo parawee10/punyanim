@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Shooter Smooth Mobile</title>
+    <title>Bubble Shooter Mobile Edition</title>
     <style>
         body { 
-            margin: 0; background: #121212; display: flex; flex-direction: column; 
+            margin: 0; background: #1a1a1a; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; height: 100vh; 
-            color: white; font-family: sans-serif; overflow: hidden; touch-action: none; 
+            color: white; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; 
         }
-        .ui { width: 360px; display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .ui { width: 360px; display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
         canvas { 
-            background: #000; border: 3px solid #333; border-radius: 10px;
-            max-width: 95vw; max-height: 75vh; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            background: #000; border: 3px solid #444; border-radius: 8px;
+            max-width: 95vw; max-height: 70vh; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
+        #score { color: #00f2fe; }
+        #next-push { color: #ff54b0; }
     </style>
 </head>
 <body>
 
     <div class="ui">
-        <span>Score: <span id="score">0</span></span>
+        <span>คะแนน: <span id="score">0</span></span>
         <span>ยิงอีก: <span id="next-push">7</span></span>
     </div>
 
@@ -30,22 +32,23 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
+        // ขนาดหน้าจอที่เหมาะสมกับมือถือ
         canvas.width = 360;
         canvas.height = 540;
 
         const COLORS = ['#FF355E', '#50BFE6', '#66FF66', '#FFFF66', '#FF6037'];
-        const bubbleRadius = 17;
+        const radius = 18; // รัศมีลูกบอล
         const cols = 10;
-        const deadLineY = canvas.height - 80;
-        
+        const pushLimit = 7; // ยิงกี่ครั้งถึงจะเพิ่มแถว
+        const deadLineY = canvas.height - 80; // เส้นตาย
+
+        let grid = [];
         let score = 0;
         let shotCount = 0;
-        const pushLimit = 7;
-        
-        let grid = [];
-        let visualOffset = 0; 
         let isPushing = false;
+        let visualOffset = 0; // สำหรับทำ Animation ไหลลง
 
+        // สร้างแถวใหม่
         function createNewRow(isOffset) {
             let row = [];
             for (let c = 0; c < cols; c++) {
@@ -58,10 +61,12 @@
             return row;
         }
 
+        // เริ่มต้นเกม
         function initGrid() {
             grid = [];
             score = 0;
             shotCount = 0;
+            visualOffset = 0;
             document.getElementById('score').innerText = score;
             document.getElementById('next-push').innerText = pushLimit;
             for (let r = 0; r < 5; r++) {
@@ -74,25 +79,26 @@
             y: canvas.height - 35,
             color: COLORS[0],
             active: false,
-            dx: 0, dy: 0, speed: 18, angle: 0
+            dx: 0, dy: 0, speed: 15, angle: 0
         };
 
+        // คำนวณตำแหน่งลูกบอลใน Grid
         function getBubblePos(r, c) {
-            const padding = 10;
-            let xOffset = (grid[r] && grid[r][c] && grid[r][c].isOffset) ? bubbleRadius : 0;
+            const padding = 2;
+            let xOffset = (grid[r] && grid[r][c] && grid[r][c].isOffset) ? radius : 0;
             return {
-                x: padding + c * (bubbleRadius * 2) + bubbleRadius + xOffset,
-                y: r * (bubbleRadius * 1.7) + bubbleRadius + 10 + visualOffset
+                x: padding + c * (radius * 2) + radius + xOffset,
+                y: r * (radius * 1.7) + radius + 10 + visualOffset
             };
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ระบบค่อยๆ เลื่อนลง
+            // ระบบค่อยๆ เลื่อนลงมา (Smooth Animation)
             if (isPushing) {
-                visualOffset += 1.5; // ความเร็วในการไหล
-                if (visualOffset >= bubbleRadius * 1.7) {
+                visualOffset += 1.5;
+                if (visualOffset >= radius * 1.7) {
                     completePush();
                 }
             }
@@ -113,9 +119,9 @@
                         let pos = getBubblePos(r, c);
                         drawBubble(pos.x, pos.y, grid[r][c].color);
                         
-                        // Game Over: สัมผัสเส้นตาย
-                        if (pos.y + bubbleRadius >= deadLineY) {
-                            alert("Game Over! บอลถึงเส้นตายแล้ว");
+                        // ตรวจสอบ Game Over
+                        if (pos.y + radius >= deadLineY) {
+                            alert("GAME OVER! คะแนนของคุณคือ " + score);
                             initGrid();
                             resetShooter();
                             return;
@@ -128,8 +134,8 @@
             if (isPointerDown && !shooter.active && !isPushing) {
                 ctx.beginPath();
                 ctx.moveTo(shooter.x, shooter.y);
-                ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 80, shooter.y + Math.sin(shooter.angle) * 80);
-                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 60, shooter.y + Math.sin(shooter.angle) * 60);
+                ctx.strokeStyle = "white";
                 ctx.stroke();
             }
 
@@ -138,7 +144,7 @@
             if (shooter.active) {
                 shooter.x += shooter.dx;
                 shooter.y += shooter.dy;
-                if (shooter.x < bubbleRadius || shooter.x > canvas.width - bubbleRadius) shooter.dx *= -1;
+                if (shooter.x < radius || shooter.x > canvas.width - radius) shooter.dx *= -1;
                 checkCollision();
                 if (shooter.y < 0) resetShooter();
             }
@@ -146,20 +152,17 @@
         }
 
         function drawBubble(x, y, color) {
-            ctx.save();
             ctx.beginPath();
-            ctx.arc(x, y, bubbleRadius - 2, 0, Math.PI * 2);
+            ctx.arc(x, y, radius - 2, 0, Math.PI * 2);
             ctx.fillStyle = color;
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.fill();
-            // ไฮไลท์เงา
-            let grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, bubbleRadius);
-            grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+            // ใส่แสงเงาให้ดูมีมิติ
+            let grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, radius);
+            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
             grad.addColorStop(1, 'rgba(0,0,0,0.1)');
             ctx.fillStyle = grad;
             ctx.fill();
-            ctx.restore();
+            ctx.closePath();
         }
 
         function checkCollision() {
@@ -168,19 +171,19 @@
                 for (let c = 0; c < grid[r].length; c++) {
                     if (grid[r][c].active) {
                         let pos = getBubblePos(r, c);
-                        if (Math.hypot(shooter.x - pos.x, shooter.y - pos.y) < bubbleRadius * 1.5) {
+                        if (Math.hypot(shooter.x - pos.x, shooter.y - pos.y) < radius * 1.5) {
                             hit = true; break;
                         }
                     }
                 }
             }
-            if (hit || shooter.y < bubbleRadius) stickBubble();
+            if (hit || shooter.y < radius) stickBubble();
         }
 
         function stickBubble() {
             let best = { r: 0, c: 0, dist: 9999 };
-            // เพิ่มแถวว่าง
-            if (grid.length < 20) {
+            // เพิ่มแถวใหม่ในหน่วยความจำหากลูกบอลยิงสูงเกินไป
+            if (grid.length < 25) {
                 grid.push(new Array(cols).fill(null).map(() => ({active: false, color: '', isOffset: false})));
                 for(let r=0; r<grid.length; r++) grid[r].forEach(b => b.isOffset = (r % 2 !== 0));
             }
@@ -197,11 +200,12 @@
 
             grid[best.r][best.c].active = true;
             grid[best.r][best.c].color = shooter.color;
+            
             checkMatch(best.r, best.c);
             
             shotCount++;
             if (shotCount >= pushLimit) {
-                isPushing = true;
+                isPushing = true; // เริ่มการไหลลง
                 shotCount = 0;
             }
             document.getElementById('next-push').innerText = pushLimit - shotCount;
@@ -211,9 +215,9 @@
         function completePush() {
             isPushing = false;
             visualOffset = 0;
-            let newIsOffset = !grid[0].isOffset;
-            grid.unshift(createNewRow(newIsOffset));
-            // ล็อค Offset ทุกแถวใหม่หลังเลื่อนลง
+            // แทรกแถวใหม่ที่ด้านบนสุด
+            grid.unshift(createNewRow(!grid[0].isOffset));
+            // ปรับค่า Offset ทุกลูกให้ตรงตามลำดับแถวใหม่
             for(let r=0; r<grid.length; r++) {
                 grid[r].forEach(b => b.isOffset = (r % 2 !== 0));
             }
@@ -257,8 +261,8 @@
         let isPointerDown = false;
         function updateInput(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+            const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
             shooter.angle = Math.atan2((clientY - rect.top) - shooter.y, (clientX - rect.left) - shooter.x);
         }
         canvas.addEventListener('pointerdown', (e) => { isPointerDown = true; updateInput(e); });
@@ -273,6 +277,7 @@
         });
 
         initGrid();
+        resetShooter();
         draw();
     </script>
 </body>
