@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bubble Shooter Classic</title>
+    <style>
+        body { 
+            margin: 0; background: #1a1a1a; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; height: 100vh; 
+            color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden; touch-action: none; 
+        }
+        .ui { width: 440px; display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; font-size: 1.2rem; }
+        canvas { 
+            background: radial-gradient(circle, #222 0%, #000 100%); 
+            border: 5px solid #333; border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,1); 
+            max-width: 95vw; max-height: 80vh; 
+        }
+        #score { color: #50BFE6; }
+        #next-push { color: #FF355E; }
+    </style>
+</head>
+<body>
+
+    <div class="ui">
+        <span>Score: <span id="score">0</span></span>
+        <span>Next: <span id="next-push">5</span></span>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 440;
+        canvas.height = 660;
+
+        const COLORS = ['#FF355E', '#50BFE6', '#66FF66', '#FFFF66', '#FF6037'];
+        const bubbleRadius = 22;
+        const rows = 14; 
+        const cols = 10;
+        
+        let score = 0;
+        let shotCount = 0;
+        const pushLimit = 5;
+
+        let grid = [];
+
+        // ฟังก์ชันสร้าง Grid เริ่มต้น
+        function initGrid() {
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    grid[r][c] = {
+                        r: r, c: c,
+                        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                        active: r < 5 // เริ่มต้น 5 แถว
+                    };
+                }
+            }
+        }
+
+        let shooter = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            active: false,
+            dx: 0, dy: 0, speed: 22, angle: 0
+        };
+
+        // หาตำแหน่ง X, Y บนจอจากเลขแถวและคอลัมน์
+        function getBubblePos(r, c) {
+            let xOffset = (r % 2 === 0) ? 0 : bubbleRadius;
+            return {
+                x: c * (bubbleRadius * 2) + bubbleRadius + xOffset,
+                y: r * (bubbleRadius * 1.7) + bubbleRadius + 15
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // วาดเส้นเล็ง (Aiming Line)
+            if (isPointerDown && !shooter.active) {
+                ctx.beginPath();
+                ctx.setLineDash([5, 10]);
+                ctx.moveTo(shooter.x, shooter.y);
+                ctx.lineTo(shooter.x + Math.cos(shooter.angle) * 200, shooter.y + Math.sin(shooter.angle) * 200);
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // วาดลูกบอลในตาราง
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c].active) {
+                        let pos = getBubblePos(r, c);
+                        drawBubble(pos.x, pos.y, grid[r][c].color);
+                    }
+                }
+            }
+
+            // วาดลูกบอลที่จะยิง
+            drawBubble(shooter.x, shooter.y, shooter.color);
+
+            if (shooter.active) {
+                shooter.x += shooter.dx;
+                shooter.y += shooter.dy;
+
+                // เด้งขอบข้าง
+                if (shooter.x < bubbleRadius || shooter.x > canvas.width - bubbleRadius) shooter.dx *= -1;
+
+                handleCollision();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        function drawBubble(x, y, color) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, bubbleRadius - 2, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // แสงเงาให้ดูเป็นทรงกลม
+            let grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, bubbleRadius);
+            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function handleCollision() {
+            let hit = false;
+            if (shooter.y < bubbleRadius) hit = true;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c].active) {
+                        let pos = getBubblePos(r, c);
+                        if (Math.hypot(shooter.x - pos.x, shooter.y - pos.y) < bubbleRadius * 1.6) {
+                            hit = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (hit) {
+                // หาช่องว่างที่ใกล้จุดปะทะที่สุดเพื่อ "เสียบ" ลูกบอลเข้าตาราง
+                let bestFit = { r: 0, c: 0, dist: 9999 };
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (!grid[r][c].active) {
+                            let pos = getBubblePos(r, c);
+                            let d = Math.hypot(shooter.x - pos.x, shooter.y - pos.y);
+                            if (d < bestFit.dist) bestFit = { r, c, dist: d };
+                        }
+                    }
+                }
+
+                grid[bestFit.r][bestFit.c].active = true;
+                grid[bestFit.r][bestFit.c].color = shooter.color;
+                
+                checkMatch(bestFit.r, bestFit.c);
+                
+                shotCount++;
+                document.getElementById('next-push').innerText = pushLimit - shotCount;
+
+                if (shotCount >= pushLimit) {
+                    pushRowsDown();
+                    shotCount = 0;
+                    document.getElementById('next-push').innerText = pushLimit;
+                }
+
+                // Check Game Over
+                if (bestFit.r >= rows - 2) {
+                    alert("Game Over! Score: " + score);
+                    initGrid();
+                    score = 0;
+                    document.getElementById('score').innerText = 0;
+                }
+
+                resetShooter();
+            }
+        }
+
+        function pushRowsDown() {
+            // เลื่อนแถวลงมา (คงสีเดิมไว้)
+            for (let r = rows - 1; r > 0; r--) {
+                for (let c = 0; c < cols; c++) {
+                    grid[r][c].active = grid[r - 1][c].active;
+                    grid[r][c].color = grid[r - 1][c].color;
+                }
+            }
+            // เพิ่มแถวใหม่ข้างบนสุด
+            for (let c = 0; c < cols; c++) {
+                grid[0][c].active = true;
+                grid[0][c].color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            }
+        }
+
+        function checkMatch(startR, startC) {
+            let targetColor = grid[startR][startC].color;
+            let matches = [];
+            let queue = [{r: startR, c: startC}];
+            let visited = new Set();
+
+            while (queue.length > 0) {
+                let curr = queue.shift();
+                let key = `${curr.r},${curr.c}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+
+                if (grid[curr.r] && grid[curr.r][curr.c] && grid[curr.r][curr.c].active && grid[curr.r][curr.c].color === targetColor) {
+                    matches.push(curr);
+                    let rowOffset = curr.r % 2 === 0 ? -1 : 0;
+                    let neighbors = [
+                        {r: curr.r, c: curr.c - 1}, {r: curr.r, c: curr.c + 1},
+                        {r: curr.r - 1, c: curr.c + rowOffset}, {r: curr.r - 1, c: curr.c + rowOffset + 1},
+                        {r: curr.r + 1, c: curr.c + rowOffset}, {r: curr.r + 1, c: curr.c + rowOffset + 1}
+                    ];
+                    neighbors.forEach(n => { if (grid[n.r] && grid[n.r][n.c]) queue.push(n); });
+                }
+            }
+
+            if (matches.length >= 3) {
+                matches.forEach(m => grid[m.r][m.c].active = false);
+                score += matches.length * 10;
+                document.getElementById('score').innerText = score;
+            }
+        }
+
+        function resetShooter() {
+            shooter.active = false;
+            shooter.x = canvas.width / 2;
+            shooter.y = canvas.height - 50;
+            shooter.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        }
+
+        let isPointerDown = false;
+        function updateInput(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            shooter.angle = Math.atan2((clientY - rect.top) - shooter.y, (clientX - rect.left) - shooter.x);
+        }
+
+        canvas.addEventListener('pointerdown', (e) => { isPointerDown = true; updateInput(e); });
+        canvas.addEventListener('pointermove', (e) => { if (isPointerDown) updateInput(e); });
+        canvas.addEventListener('pointerup', (e) => {
+            if (isPointerDown && !shooter.active) {
+                shooter.dx = Math.cos(shooter.angle) * shooter.speed;
+                shooter.dy = Math.sin(shooter.angle) * shooter.speed;
+                shooter.active = true;
+            }
+            isPointerDown = false;
+        });
+
+        initGrid();
+        draw();
+    </script>
+</body>
+</html>
