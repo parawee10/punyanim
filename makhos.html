@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Checkers</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: #2c3e50;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+        .status {
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div class="status" id="status">ตาของฝ่าย: สีแดง</div>
+<canvas id="gameBoard" width="600" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameBoard');
+    const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
+    
+    const SIZE = 8;
+    const CELL_SIZE = canvas.width / SIZE;
+    
+    // 1 = แดง, 2 = ดำ, 3 = แดง(ฮอส), 4 = ดำ(ฮอส)
+    let board = [
+        [0, 2, 0, 2, 0, 2, 0, 2],
+        [2, 0, 2, 0, 2, 0, 2, 0],
+        [0, 2, 0, 2, 0, 2, 0, 2],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 0]
+    ];
+
+    let selected = null;
+    let turn = 1;
+
+    function drawBoard() {
+        for (let r = 0; r < SIZE; r++) {
+            for (let c = 0; c < SIZE; c++) {
+                // วาดช่องตาราง
+                ctx.fillStyle = (r + c) % 2 === 0 ? '#ecf0f1' : '#34495e';
+                ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                
+                // วาดตัวหมาก
+                let piece = board[r][c];
+                if (piece !== 0) {
+                    drawPiece(c * CELL_SIZE + CELL_SIZE/2, r * CELL_SIZE + CELL_SIZE/2, piece, (selected && selected.r === r && selected.c === c));
+                }
+            }
+        }
+    }
+
+    function drawPiece(x, y, type, isSelected) {
+        const radius = CELL_SIZE * 0.4;
+        
+        // เงาหมาก
+        ctx.beginPath();
+        ctx.arc(x, y + 4, radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fill();
+
+        // ตัวหมาก
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        let color = (type === 1 || type === 3) ? '#e74c3c' : '#2c3e50';
+        if (isSelected) color = '#f1c40f'; // Highlight เมื่อเลือก
+        
+        let grad = ctx.createRadialGradient(x-5, y-5, 5, x, y, radius);
+        grad.addColorStop(0, '#ffffff55');
+        grad.addColorStop(1, color);
+        
+        ctx.fillStyle = grad;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        // สัญลักษณ์ "ฮอส"
+        if (type > 2) {
+            ctx.fillStyle = "white";
+            ctx.font = "30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("★", x, y + 10);
+        }
+    }
+
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const c = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+        const r = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+        if (selected) {
+            if (movePiece(selected.r, selected.c, r, c)) {
+                selected = null;
+                turn = turn === 1 ? 2 : 1;
+                statusDiv.innerText = `ตาของฝ่าย: ${turn === 1 ? 'สีแดง' : 'สีดำ'}`;
+            } else {
+                selected = null;
+            }
+        } else {
+            if (board[r][c] !== 0 && (board[r][c] === turn || board[r][c] === turn + 2)) {
+                selected = {r, c};
+            }
+        }
+        drawBoard();
+    });
+
+    function movePiece(fromR, fromC, toR, toC) {
+        // กฎพื้นฐาน: เดินลงช่องว่างที่เป็นสีเข้มเท่านั้น
+        if (board[toR][toC] !== 0 || (toR + toC) % 2 === 0) return false;
+        
+        let piece = board[fromR][fromC];
+        let rowDiff = toR - fromR;
+        let colDiff = Math.abs(toC - fromC);
+
+        // เดินปกติ (หมากธรรมดาเดินถอยหลังไม่ได้)
+        let isNormalMove = (piece === 1) ? rowDiff === -1 : (piece === 2) ? rowDiff === 1 : Math.abs(rowDiff) === 1;
+        
+        if (isNormalMove && colDiff === 1) {
+            board[toR][toC] = piece;
+            board[fromR][fromC] = 0;
+            checkKing(toR, toC);
+            return true;
+        }
+
+        // การกิน
+        if (Math.abs(rowDiff) === 2 && colDiff === 2) {
+            let midR = (fromR + toR) / 2;
+            let midC = (fromC + toC) / 2;
+            let target = board[midR][midC];
+            
+            if (target !== 0 && (target !== piece && target !== piece + 2 && target !== piece - 2)) {
+                board[toR][toC] = piece;
+                board[fromR][fromC] = 0;
+                board[midR][midC] = 0;
+                checkKing(toR, toC);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function checkKing(r, c) {
+        if (board[r][c] === 1 && r === 0) board[r][c] = 3;
+        if (board[r][c] === 2 && r === 7) board[r][c] = 4;
+    }
+
+    drawBoard();
+</script>
+</body>
+</html>
