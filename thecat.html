@@ -3,41 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cat Jump - Pro Controller</title>
+    <title>Cat Jump Mobile</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Tahoma', sans-serif; touch-action: manipulation; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #87CEEB; 
+            font-family: sans-serif; 
+            user-select: none; 
+            touch-action: none; /* ป้องกันการเลื่อนหน้าจอไปมาบนมือถือ */
+        }
         canvas { display: block; }
         
-        /* UI คะแนน */
+        /* สถิติคะแนน */
         #ui {
-            position: absolute; top: 10px; width: 100%; text-align: center;
-            color: white; font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px #000;
+            position: absolute; top: 15px; width: 100%; text-align: center;
+            color: white; font-size: 26px; font-weight: bold; text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
             pointer-events: none;
         }
 
-        /* ปุ่มกดสำหรับมือถือ */
-        .controls {
-            position: absolute; bottom: 20px; width: 100%;
-            display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box;
+        /* ปุ่มเดินสำหรับมือถือ */
+        .mobile-controls {
+            position: absolute; bottom: 30px; left: 20px;
+            display: flex; gap: 15px;
         }
         .btn {
-            width: 70px; height: 70px; background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; user-select: none; -webkit-user-select: none;
+            width: 80px; height: 80px; 
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px solid white; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 35px; color: white;
         }
-        .btn:active { background: rgba(255, 255, 255, 0.8); }
-        
-        @media (min-width: 768px) { .controls { display: none; } } /* ซ่อนปุ่มบนคอม */
+        .btn:active { background: rgba(255, 255, 255, 0.7); }
+
+        /* คำแนะนำกลางจอ */
+        #hint {
+            position: absolute; bottom: 120px; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.6); font-size: 14px; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-    <div id="ui">สถิติผ่านด่าน: <span id="score">0</span></div>
+    <div id="ui">Win: <span id="score">0</span></div>
+    <div id="hint">แตะหน้าจอฝั่งขวาหรือพื้นที่ว่างเพื่อกระโดด</div>
     <canvas id="gameCanvas"></canvas>
 
-    <div class="controls">
+    <div class="mobile-controls">
         <div id="btnLeft" class="btn">⬅️</div>
-        <div id="btnJump" class="btn">⬆️</div>
         <div id="btnRight" class="btn">➡️</div>
     </div>
 
@@ -51,10 +64,9 @@
     let player, pillars, goal, offset_x;
     
     const GRAVITY = 0.5;
-    const JUMP_FORCE = -10;
+    const JUMP_FORCE = -11;
     const SPEED = 5;
 
-    // ระบบตรวจสอบปุ่มที่กด
     let keys = { left: false, right: false };
 
     function init() {
@@ -65,8 +77,8 @@
 
         player = {
             x: 100, y: canvasHeight - 200,
-            w: 45, h: 40,
-            velY: 0, velX: 0
+            w: 40, h: 40,
+            velY: 0
         };
         
         offset_x = 0;
@@ -78,10 +90,10 @@
         let currentX = 100;
         let lastY = canvasHeight - 150;
         
-        const numPillars = Math.floor(Math.random() * 3) + 5;
+        const numPillars = 6; 
         for (let i = 0; i < numPillars; i++) {
-            let newY = lastY + (Math.random() * 120 - 60); 
-            newY = Math.max(canvasHeight * 0.4, Math.min(newY, canvasHeight - 100));
+            let newY = lastY + (Math.random() * 100 - 50); 
+            newY = Math.max(canvasHeight * 0.4, Math.min(newY, canvasHeight - 120));
             
             pillars.push({ x: currentX, y: newY, w: 90 });
             currentX += 180; 
@@ -90,29 +102,27 @@
         goal = { x: currentX, y: lastY, w: 120 };
     }
 
-    // ฟังก์ชันกระโดดแบบกดรัวได้
     function jump() {
         player.velY = JUMP_FORCE;
     }
 
     function update() {
-        // การเคลื่อนที่แนวตั้ง (กระโดด/ตก)
         player.velY += GRAVITY;
         player.y += player.velY;
 
-        // การเคลื่อนที่แนวนอน (ซ้าย/ขวา)
         if (keys.left) player.x -= SPEED;
         if (keys.right) player.x += SPEED;
 
-        // กล้องเลื่อนตามแมว
-        let targetOffset = player.x - canvasWidth / 3;
-        offset_x += (targetOffset - offset_x) * 0.1; // ให้กล้องเลื่อนนุ่มๆ
+        // ขอบเขตไม่ให้เดินทะลุซ้ายสุด
+        if (player.x < 0) player.x = 0;
 
-        // ตรวจสอบการชนเสา
+        // กล้องตามนุ่มๆ
+        let targetOffset = player.x - canvasWidth / 3;
+        offset_x += (targetOffset - offset_x) * 0.1;
+
         const allObjects = [...pillars, goal];
         allObjects.forEach(p => {
             if (player.x + player.w > p.x && player.x < p.x + p.w) {
-                // เช็คว่าตกลงมาใส่เสาพอดีไหม
                 if (player.y + player.h >= p.y && player.y + player.h <= p.y + 25 && player.velY >= 0) {
                     player.y = p.y - player.h;
                     player.velY = 0;
@@ -128,12 +138,12 @@
             }
         });
 
-        // ตกจอ = Game Over
+        // ตกจอ
         if (player.y > canvasHeight) {
             score = 0;
             scoreElement.innerText = score;
             player.x = 100;
-            player.y = canvasHeight - 200;
+            player.y = canvasHeight - 250;
             player.velY = 0;
             offset_x = 0;
             generateLevel();
@@ -143,31 +153,32 @@
     function draw() {
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
+        // วาดฉากหลังไล่เฉดสี
+        let gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+        gradient.addColorStop(0, "#87CEEB");
+        gradient.addColorStop(1, "#E0F7FA");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
         // วาดเสา
-        ctx.fillStyle = "#5D6D7E";
+        ctx.fillStyle = "#546E7A";
         pillars.forEach(p => {
             ctx.fillRect(p.x - offset_x, p.y, p.w, canvasHeight - p.y);
-            ctx.strokeStyle = "#2C3E50";
-            ctx.strokeRect(p.x - offset_x, p.y, p.w, canvasHeight - p.y);
         });
 
         // วาดเส้นชัย
-        ctx.fillStyle = "#27AE60";
+        ctx.fillStyle = "#43A047";
         ctx.fillRect(goal.x - offset_x, goal.y, goal.w, canvasHeight - goal.y);
 
-        // วาดตัวแมว
-        const drawX = player.x - offset_x;
-        ctx.fillStyle = "#F39C12"; // ตัวสีส้ม
-        ctx.fillRect(drawX, player.y, player.w, player.h);
+        // วาดแมว
+        const px = player.x - offset_x;
+        ctx.fillStyle = "#FF9800";
+        ctx.fillRect(px, player.y, player.w, player.h);
         // หู
-        ctx.fillStyle = "#E67E22";
         ctx.beginPath();
-        ctx.moveTo(drawX, player.y); ctx.lineTo(drawX+10, player.y-12); ctx.lineTo(drawX+18, player.y); ctx.fill();
+        ctx.moveTo(px, player.y); ctx.lineTo(px+10, player.y-10); ctx.lineTo(px+15, player.y); ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(drawX+player.w, player.y); ctx.lineTo(drawX+player.w-10, player.y-12); ctx.lineTo(drawX+player.w-18, player.y); ctx.fill();
-        // ลูกตา
-        ctx.fillStyle = "white";
-        ctx.fillRect(drawX + 25, player.y + 10, 8, 8);
+        ctx.moveTo(px+player.w, player.y); ctx.lineTo(px+player.w-10, player.y-10); ctx.lineTo(px+player.w-15, player.y); ctx.fill();
     }
 
     function gameLoop() {
@@ -176,29 +187,35 @@
         requestAnimationFrame(gameLoop);
     }
 
-    // --- ระบบควบคุม (Keyboard) ---
+    // --- การควบคุม (Keyboard สำหรับ PC) ---
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'w') jump();
-        if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-        if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+        if (e.code === 'Space' || e.key === 'ArrowUp') jump();
+        if (e.key === 'ArrowLeft') keys.left = true;
+        if (e.key === 'ArrowRight') keys.right = true;
     });
     window.addEventListener('keyup', (e) => {
-        if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-        if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+        if (e.key === 'ArrowLeft') keys.left = false;
+        if (e.key === 'ArrowRight') keys.right = false;
     });
 
-    // --- ระบบควบคุม (Touch & Mouse สำหรับปุ่มบนจอ) ---
-    const setupBtn = (id, action, stopAction) => {
-        const el = document.getElementById(id);
-        el.addEventListener('mousedown', action);
-        el.addEventListener('mouseup', stopAction);
-        el.addEventListener('touchstart', (e) => { e.preventDefault(); action(); });
-        el.addEventListener('touchend', (e) => { e.preventDefault(); stopAction(); });
-    };
+    // --- การควบคุม (Touch สำหรับมือถือ) ---
+    // ปุ่มเดินซ้าย-ขวา
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
 
-    setupBtn('btnLeft', () => keys.left = true, () => keys.left = false);
-    setupBtn('btnRight', () => keys.right = true, () => keys.right = false);
-    setupBtn('btnJump', jump, () => {});
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+    
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+
+    // แตะที่ว่างของจอเพื่อกระโดด
+    window.addEventListener('touchstart', (e) => {
+        // ถ้าจุดที่แตะไม่ใช่ปุ่มเดิน ให้ทำการกระโดด
+        if (e.target.className !== 'btn') {
+            jump();
+        }
+    }, { passive: false });
 
     window.addEventListener('resize', init);
     init();
