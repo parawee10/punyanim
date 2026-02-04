@@ -2,17 +2,32 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Jump Adventure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cat Jump - Pro Controller</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: Arial, sans-serif; }
-        canvas { display: block; background: #87CEEB; }
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Tahoma', sans-serif; touch-action: manipulation; }
+        canvas { display: block; }
+        
+        /* UI คะแนน */
         #ui {
-            position: absolute; top: 20px; left: 20px;
-            color: white; font-size: 24px; font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            position: absolute; top: 10px; width: 100%; text-align: center;
+            color: white; font-size: 28px; font-weight: bold; text-shadow: 2px 2px 4px #000;
             pointer-events: none;
         }
+
+        /* ปุ่มกดสำหรับมือถือ */
+        .controls {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box;
+        }
+        .btn {
+            width: 70px; height: 70px; background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; user-select: none; -webkit-user-select: none;
+        }
+        .btn:active { background: rgba(255, 255, 255, 0.8); }
+        
+        @media (min-width: 768px) { .controls { display: none; } } /* ซ่อนปุ่มบนคอม */
     </style>
 </head>
 <body>
@@ -20,18 +35,27 @@
     <div id="ui">สถิติผ่านด่าน: <span id="score">0</span></div>
     <canvas id="gameCanvas"></canvas>
 
+    <div class="controls">
+        <div id="btnLeft" class="btn">⬅️</div>
+        <div id="btnJump" class="btn">⬆️</div>
+        <div id="btnRight" class="btn">➡️</div>
+    </div>
+
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreElement = document.getElementById('score');
 
-    // ตั้งค่าตัวแปรเกม
     let score = 0;
     let canvasWidth, canvasHeight;
     let player, pillars, goal, offset_x;
     
-    const GRAVITY = 0.6;
-    const JUMP_FORCE = -12;
+    const GRAVITY = 0.5;
+    const JUMP_FORCE = -10;
+    const SPEED = 5;
+
+    // ระบบตรวจสอบปุ่มที่กด
+    let keys = { left: false, right: false };
 
     function init() {
         canvasWidth = window.innerWidth;
@@ -41,8 +65,8 @@
 
         player = {
             x: 100, y: canvasHeight - 200,
-            w: 40, h: 40,
-            velY: 0, isJumping: false
+            w: 45, h: 40,
+            velY: 0, velX: 0
         };
         
         offset_x = 0;
@@ -54,48 +78,44 @@
         let currentX = 100;
         let lastY = canvasHeight - 150;
         
-        // สร้างเสา 5-8 ต้น
-        const numPillars = Math.floor(Math.random() * 4) + 5;
+        const numPillars = Math.floor(Math.random() * 3) + 5;
         for (let i = 0; i < numPillars; i++) {
-            let newY = lastY + (Math.random() * 100 - 50); // สูงต่ำไม่ห่างกันเกิน 50px
-            newY = Math.max(canvasHeight * 0.4, Math.min(newY, canvasHeight - 100)); // คุมขอบเขต
+            let newY = lastY + (Math.random() * 120 - 60); 
+            newY = Math.max(canvasHeight * 0.4, Math.min(newY, canvasHeight - 100));
             
-            pillars.push({ x: currentX, y: newY, w: 80 });
-            currentX += Math.random() * 50 + 150; // ระยะห่าง
+            pillars.push({ x: currentX, y: newY, w: 90 });
+            currentX += 180; 
             lastY = newY;
         }
-        
-        // เสาสุดท้ายเป็นเส้นชัย
-        goal = { x: currentX, y: lastY, w: 100 };
+        goal = { x: currentX, y: lastY, w: 120 };
     }
 
+    // ฟังก์ชันกระโดดแบบกดรัวได้
     function jump() {
-        if (!player.isJumping) {
-            player.velY = JUMP_FORCE;
-            player.isJumping = true;
-        }
+        player.velY = JUMP_FORCE;
     }
 
     function update() {
+        // การเคลื่อนที่แนวตั้ง (กระโดด/ตก)
         player.velY += GRAVITY;
         player.y += player.velY;
 
+        // การเคลื่อนที่แนวนอน (ซ้าย/ขวา)
+        if (keys.left) player.x -= SPEED;
+        if (keys.right) player.x += SPEED;
+
         // กล้องเลื่อนตามแมว
-        if (player.x - offset_x > canvasWidth * 0.4) {
-            offset_x = player.x - canvasWidth * 0.4;
-        }
+        let targetOffset = player.x - canvasWidth / 3;
+        offset_x += (targetOffset - offset_x) * 0.1; // ให้กล้องเลื่อนนุ่มๆ
 
-        let onPillar = false;
+        // ตรวจสอบการชนเสา
         const allObjects = [...pillars, goal];
-
         allObjects.forEach(p => {
-            // เช็คการชน (Collision)
             if (player.x + player.w > p.x && player.x < p.x + p.w) {
-                if (player.y + player.h >= p.y && player.y + player.h <= p.y + 20 && player.velY >= 0) {
+                // เช็คว่าตกลงมาใส่เสาพอดีไหม
+                if (player.y + player.h >= p.y && player.y + player.h <= p.y + 25 && player.velY >= 0) {
                     player.y = p.y - player.h;
                     player.velY = 0;
-                    player.isJumping = false;
-                    onPillar = true;
 
                     if (p === goal) {
                         score++;
@@ -108,41 +128,46 @@
             }
         });
 
-        // ตกจอ
+        // ตกจอ = Game Over
         if (player.y > canvasHeight) {
             score = 0;
             scoreElement.innerText = score;
             player.x = 100;
             player.y = canvasHeight - 200;
+            player.velY = 0;
             offset_x = 0;
             generateLevel();
         }
-
-        player.x += 2; // แมวเดินไปข้างหน้าช้าๆ (ถ้าไม่เดินเลยจะเล่นยาก)
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
         // วาดเสา
-        ctx.fillStyle = "#666";
+        ctx.fillStyle = "#5D6D7E";
         pillars.forEach(p => {
             ctx.fillRect(p.x - offset_x, p.y, p.w, canvasHeight - p.y);
+            ctx.strokeStyle = "#2C3E50";
+            ctx.strokeRect(p.x - offset_x, p.y, p.w, canvasHeight - p.y);
         });
 
         // วาดเส้นชัย
-        ctx.fillStyle = "#2ecc71";
+        ctx.fillStyle = "#27AE60";
         ctx.fillRect(goal.x - offset_x, goal.y, goal.w, canvasHeight - goal.y);
 
-        // วาดแมว (สี่เหลี่ยมสีส้ม)
-        ctx.fillStyle = "#e67e22";
-        ctx.fillRect(player.x - offset_x, player.y, player.w, player.h);
-        // หูแมวเล็กๆ
+        // วาดตัวแมว
+        const drawX = player.x - offset_x;
+        ctx.fillStyle = "#F39C12"; // ตัวสีส้ม
+        ctx.fillRect(drawX, player.y, player.w, player.h);
+        // หู
+        ctx.fillStyle = "#E67E22";
         ctx.beginPath();
-        ctx.moveTo(player.x - offset_x, player.y);
-        ctx.lineTo(player.x - offset_x + 10, player.y - 10);
-        ctx.lineTo(player.x - offset_x + 20, player.y);
-        ctx.fill();
+        ctx.moveTo(drawX, player.y); ctx.lineTo(drawX+10, player.y-12); ctx.lineTo(drawX+18, player.y); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(drawX+player.w, player.y); ctx.lineTo(drawX+player.w-10, player.y-12); ctx.lineTo(drawX+player.w-18, player.y); ctx.fill();
+        // ลูกตา
+        ctx.fillStyle = "white";
+        ctx.fillRect(drawX + 25, player.y + 10, 8, 8);
     }
 
     function gameLoop() {
@@ -151,12 +176,31 @@
         requestAnimationFrame(gameLoop);
     }
 
-    // Input รองรับทั้งคีย์บอร์ดและทัช
-    window.addEventListener('keydown', (e) => { if (e.code === 'Space') jump(); });
-    window.addEventListener('touchstart', (e) => { jump(); e.preventDefault(); }, {passive: false});
-    window.addEventListener('mousedown', jump);
-    window.addEventListener('resize', init);
+    // --- ระบบควบคุม (Keyboard) ---
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'w') jump();
+        if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+        if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+        if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    });
 
+    // --- ระบบควบคุม (Touch & Mouse สำหรับปุ่มบนจอ) ---
+    const setupBtn = (id, action, stopAction) => {
+        const el = document.getElementById(id);
+        el.addEventListener('mousedown', action);
+        el.addEventListener('mouseup', stopAction);
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); action(); });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); stopAction(); });
+    };
+
+    setupBtn('btnLeft', () => keys.left = true, () => keys.left = false);
+    setupBtn('btnRight', () => keys.right = true, () => keys.right = false);
+    setupBtn('btnJump', jump, () => {});
+
+    window.addEventListener('resize', init);
     init();
     gameLoop();
 </script>
