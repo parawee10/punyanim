@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Chef: Pro Edition</title>
+    <title>Master Chef: Dual Mode</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,120 +16,73 @@
             --error: #e74c3c;
         }
 
-        body {
-            font-family: 'Kanit', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .game-container { background: white; padding: 2rem; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 850px; width: 100%; text-align: center; position: relative; }
+        
+        .hidden { display: none !important; }
 
-        .game-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 850px;
-            width: 100%;
-            text-align: center;
-        }
+        /* --- Start Screen --- */
+        .mode-container { display: flex; flex-direction: column; gap: 20px; margin-top: 30px; }
+        .btn-mode { padding: 30px; border-radius: 20px; border: none; cursor: pointer; font-size: 1.5rem; font-weight: bold; transition: 0.3s; color: white; }
+        .btn-normal { background: var(--secondary); }
+        .btn-random { background: var(--dark); }
+        .btn-mode:hover { transform: scale(1.05); opacity: 0.9; }
 
-        h1 { color: var(--secondary); margin: 0; font-size: 2.5rem; }
-        .sub-title { color: #666; margin-bottom: 25px; }
-
+        /* --- Menu Selection --- */
         .category-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .tab { padding: 10px 25px; border-radius: 25px; border: 2px solid #ddd; cursor: pointer; transition: 0.3s; font-weight: bold; }
         .tab.active.sweet { background: var(--primary); color: white; border-color: var(--primary); }
         .tab.active.savory { background: var(--savory); color: white; border-color: var(--savory); }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .menu-item {
-            background: #fff;
-            border: 2px solid #eee;
-            border-radius: 20px;
-            padding: 15px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .menu-item:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); border-color: var(--secondary); }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+        .menu-item { background: #fff; border: 2px solid #eee; border-radius: 20px; padding: 15px; cursor: pointer; transition: 0.3s; }
+        .menu-item:hover { transform: translateY(-5px); border-color: var(--secondary); }
         .menu-emoji { font-size: 3rem; display: block; margin-bottom: 5px; }
 
+        /* --- Game Screen --- */
+        .timer-box { font-size: 1.5rem; color: var(--error); font-weight: bold; margin-bottom: 10px; padding: 10px; border: 2px solid var(--error); border-radius: 10px; display: inline-block; }
         .baking-header { font-size: 1.8rem; margin-bottom: 20px; padding: 20px; border-radius: 20px; font-weight: bold; }
-        .progress-bar { font-size: 1.2rem; margin-bottom: 15px; color: var(--dark); }
-
-        .ingredient-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 20px;
-        }
-
-        .btn-ingredient {
-            padding: 15px 5px;
-            border: 2px solid #ddd;
-            background: white;
-            border-radius: 12px;
-            cursor: pointer;
-            font-family: 'Kanit';
-            font-size: 0.95rem;
-            transition: 0.2s;
-        }
-
-        .btn-ingredient:hover:not(.disabled) { border-color: var(--secondary); background: #fff0f3; }
-        .btn-ingredient.correct { background: var(--success) !important; color: white; border-color: #27ae60; cursor: default; }
-        .btn-ingredient.wrong { background: var(--error) !important; color: white; border-color: #c0392b; cursor: default; }
-
-        .hidden { display: none !important; }
-        .result-msg { margin-top: 20px; font-size: 1.4rem; font-weight: bold; height: 35px; }
-
-        .btn-main {
-            margin-top: 20px;
-            padding: 12px 35px;
-            background: var(--dark);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: 0.3s;
-        }
+        .ingredient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; background: #f8f9fa; padding: 20px; border-radius: 20px; }
+        .btn-ingredient { padding: 15px 5px; border: 2px solid #ddd; background: white; border-radius: 12px; cursor: pointer; font-family: 'Kanit'; font-size: 0.95rem; }
+        .btn-ingredient.correct { background: var(--success) !important; color: white; }
+        .btn-ingredient.wrong { background: var(--error) !important; color: white; }
+        .result-msg { margin-top: 20px; font-size: 1.4rem; font-weight: bold; min-height: 40px; }
+        .btn-main { margin-top: 20px; padding: 12px 35px; background: var(--dark); color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <div id="screen-menu">
+    <div id="screen-start">
         <h1>👩‍🍳 Master Chef 👨‍🍳</h1>
-        <p class="sub-title">เลือกเมนูที่ต้องการพิสูจน์ฝีมือ (ระวังตัวหลอกให้ดี!)</p>
+        <p>ยินดีต้อนรับสู่ห้องเครื่องเสวย กรุณาเลือกโหมดการเล่น</p>
+        <div class="mode-container">
+            <button class="btn-mode btn-normal" onclick="goMenu()">Normal Mode<br><small>(เลือกเมนูเองตามใจชอบ)</small></button>
+            <button class="btn-mode btn-random" onclick="startRandomMode()">Random Mode<br><small>(สุ่มเมนูอัตโนมัติ + จับเวลา 3 นาที)</small></button>
+        </div>
+    </div>
+
+    <div id="screen-menu" class="hidden">
+        <h2>เลือกเมนูที่คุณถนัด</h2>
         <div class="category-tabs">
-            <div id="tab-sweet" class="tab active sweet" onclick="changeTab('sweet')">ของหวาน (20)</div>
-            <div id="tab-savory" class="tab savory" onclick="changeTab('savory')">ของคาว (10)</div>
+            <div id="tab-sweet" class="tab active sweet" onclick="changeTab('sweet')">ของหวาน</div>
+            <div id="tab-savory" class="tab savory" onclick="changeTab('savory')">ของคาว</div>
         </div>
         <div id="menu-list" class="menu-grid"></div>
+        <button class="btn-main" onclick="location.reload()">กลับหน้าหลัก</button>
     </div>
 
     <div id="screen-game" class="hidden">
+        <div id="timer-display" class="timer-box hidden">เวลาคงเหลือ: 03:00</div>
         <div id="game-header" class="baking-header"></div>
         <div id="progress" class="progress-bar">เลือกวัตถุดิบที่ถูกต้อง: 0 / 6</div>
         <div id="ingredient-list" class="ingredient-grid"></div>
         <div id="message" class="result-msg"></div>
-        <button id="btn-back" class="btn-main hidden" onclick="goBack()">กลับไปเลือกเมนูใหม่</button>
+        <button id="btn-back" class="btn-main hidden" onclick="location.reload()">กลับหน้าหลัก</button>
     </div>
 </div>
 
 <script>
     const recipes = [
-        // ของหวาน (20 เมนู)
         { type: "sweet", name: "เค้กช็อกโกแลต", emoji: "🎂", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
         { type: "sweet", name: "มาการอง", emoji: "🧁", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
         { type: "sweet", name: "พายแอปเปิ้ล", emoji: "🥧", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
@@ -150,8 +103,6 @@
         { type: "sweet", name: "บิงซู", emoji: "🍧", ingredients: ["น้ำแข็งไส", "นมข้นหวาน", "ผลไม้สด", "ถั่วแดง", "ผงมัทฉะ", "วิปปิ้งครีม"] },
         { type: "sweet", name: "ไอศกรีมทอด", emoji: "🍨", ingredients: ["ไอศกรีม", "ขนมปัง", "แป้งทอดกรอบ", "น้ำมันพืช", "เกล็ดขนมปัง", "ไข่ไก่"] },
         { type: "sweet", name: "โมจิ", emoji: "🍡", ingredients: ["แป้งข้าวเหนียว", "น้ำตาล", "แป้งมัน", "ถั่วแดง", "น้ำ", "สีผสมอาหาร"] },
-
-        // ของคาว (10 เมนู)
         { type: "savory", name: "ต้มยำกุ้ง", emoji: "🦐", ingredients: ["กุ้ง", "ตะไคร้", "ใบมะกรูด", "เห็ดฟาง", "มะนาว", "พริกเผา"] },
         { type: "savory", name: "กะเพราไข่ดาว", emoji: "🍳", ingredients: ["ใบกะเพรา", "เนื้อหมู", "พริกขี้หนู", "กระเทียม", "น้ำปลา", "ไข่ไก่"] },
         { type: "savory", name: "ส้มตำไทย", emoji: "🥗", ingredients: ["มะละกอ", "ถั่วฝักยาว", "มะเขือเทศ", "กุ้งแห้ง", "ถั่วลิสง", "น้ำตาลปี๊บ"] },
@@ -167,7 +118,53 @@
     let currentRecipe = null;
     let score = 0;
     let isGameOver = false;
+    let timer = null;
+    let timeLeft = 180;
 
+    // --- โลจิกหน้าแรก ---
+    function goMenu() {
+        document.getElementById('screen-start').classList.add('hidden');
+        document.getElementById('screen-menu').classList.remove('hidden');
+        changeTab('sweet');
+    }
+
+    function startRandomMode() {
+        const randomRecipe = recipes[Math.floor(Math.random() * recipes.length)];
+        document.getElementById('screen-start').classList.add('hidden');
+        document.getElementById('timer-display').classList.remove('hidden');
+        startTimer();
+        startGame(randomRecipe);
+    }
+
+    // --- ระบบเวลา ---
+    function startTimer() {
+        timeLeft = 180;
+        updateTimerDisplay();
+        timer = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                loseByTime();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer-display').innerText = `เวลาคงเหลือ: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function loseByTime() {
+        if (isGameOver) return;
+        isGameOver = true;
+        document.getElementById('message').innerText = "⏰ หมดเวลา! คุณทำอาหารช้าเกินไป!";
+        document.getElementById('message').style.color = "var(--error)";
+        document.getElementById('btn-back').classList.remove('hidden');
+    }
+
+    // --- ระบบเมนู ---
     function changeTab(type) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-' + type).classList.add('active');
@@ -186,6 +183,7 @@
         });
     }
 
+    // --- ระบบเล่นเกม ---
     function startGame(recipe) {
         currentRecipe = recipe;
         score = 0;
@@ -196,10 +194,9 @@
         document.getElementById('btn-back').classList.add('hidden');
         
         const header = document.getElementById('game-header');
-        header.innerText = `กำลังทำ: ${recipe.emoji} ${recipe.name}`;
+        header.innerText = `โจทย์: ${recipe.emoji} ${recipe.name}`;
         header.style.background = recipe.type === 'sweet' ? '#fff0f3' : '#e3f2fd';
-        header.style.color = recipe.type === 'sweet' ? 'var(--secondary)' : 'var(--savory)';
-
+        
         updateProgress();
         renderIngredients();
     }
@@ -207,29 +204,14 @@
     function renderIngredients() {
         const list = document.getElementById('ingredient-list');
         list.innerHTML = '';
-
-        // --- ระบบสุ่มวัตถุดิบหลอกที่ยากขึ้น ---
-        // 1. วัตถุดิบจริง 6 อย่าง
-        let options = [...currentRecipe.ingredients];
-
-        // 2. ดึงวัตถุดิบจากเมนูอื่นๆ ใน "หมวดเดียวกัน" มาหลอก (เพิ่มความสับสน)
-        let sameTypeIngredients = [];
-        recipes.filter(r => r.type === currentRecipe.type && r.name !== currentRecipe.name)
-               .forEach(r => sameTypeIngredients.push(...r.ingredients));
         
-        // กรองเอาเฉพาะตัวที่ไม่ซ้ำกับของจริง
-        sameTypeIngredients = [...new Set(sameTypeIngredients)].filter(i => !currentRecipe.ingredients.includes(i));
-        let smartFakes = sameTypeIngredients.sort(() => 0.5 - Math.random()).slice(0, 9); // สุ่มมา 9 อย่าง
-        options.push(...smartFakes);
-
-        // 3. ดึงวัตถุดิบจาก "หมวดตรงข้าม" มานิดหน่อย (หลอกพื้นฐาน)
-        let otherTypeIngredients = [];
-        recipes.filter(r => r.type !== currentRecipe.type)
-               .forEach(r => otherTypeIngredients.push(...r.ingredients));
-        let crossFakes = otherTypeIngredients.sort(() => 0.5 - Math.random()).slice(0, 3); // สุ่มมา 3 อย่าง
-        options.push(...crossFakes);
-
-        // รวมทั้งหมด 18 อย่างแล้ว Shuffle
+        // ผสมตัวหลอกอัจฉริยะ (Smart Fake)
+        let options = [...currentRecipe.ingredients];
+        let fakes = [];
+        recipes.forEach(r => { if(r.name !== currentRecipe.name) fakes.push(...r.ingredients); });
+        fakes = [...new Set(fakes)].filter(i => !currentRecipe.ingredients.includes(i));
+        
+        options.push(...fakes.sort(() => 0.5 - Math.random()).slice(0, 12));
         options.sort(() => Math.random() - 0.5);
 
         options.forEach(ing => {
@@ -250,34 +232,26 @@
             updateProgress();
             if (score === 6) {
                 isGameOver = true;
+                clearInterval(timer);
                 const msg = document.getElementById('message');
-                msg.innerText = "🎉 เยี่ยม! คุณคือเชฟระดับมือโปร!";
+                msg.innerText = "🎉 สำเร็จ! คุณคือเชฟระดับพระกาฬ!";
                 msg.style.color = "var(--success)";
                 document.getElementById('btn-back').classList.remove('hidden');
             }
         } else {
             isGameOver = true;
+            clearInterval(timer);
             btn.classList.add('wrong');
             const msg = document.getElementById('message');
-            msg.innerText = `🤢 พลาด! ${ing} ไม่ใช่ส่วนผสมของ ${currentRecipe.name}`;
+            msg.innerText = `❌ พลาด! ${ing} ไม่ใช่ส่วนผสมของ ${currentRecipe.name}`;
             msg.style.color = "var(--error)";
             document.getElementById('btn-back').classList.remove('hidden');
-            // ทำปุ่มอื่นให้กดไม่ได้
-            document.querySelectorAll('.btn-ingredient').forEach(b => b.classList.add('disabled'));
         }
     }
 
     function updateProgress() {
         document.getElementById('progress').innerText = `วัตถุดิบที่ถูกต้อง: ${score} / 6`;
     }
-
-    function goBack() {
-        document.getElementById('screen-menu').classList.remove('hidden');
-        document.getElementById('screen-game').classList.add('hidden');
-    }
-
-    // เริ่มต้นหน้าแรก
-    renderMenu('sweet');
 </script>
 
 </body>
