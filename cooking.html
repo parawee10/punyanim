@@ -21,350 +21,241 @@
             color: var(--dark);
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Adjust to flex-start for longer content */
             min-height: 100vh;
+            margin: 0;
             padding: 20px;
-            box-sizing: border-box;
         }
 
         .game-container {
             background: white;
             padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            max-width: 800px; /* Increased max-width */
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 700px;
             width: 100%;
             text-align: center;
         }
 
-        h1 { 
-            color: var(--secondary); 
-            margin-bottom: 20px;
-            font-size: 2.5rem;
-        }
-        h2 { 
-            color: var(--primary); 
-            margin-bottom: 15px;
-            font-size: 1.8rem;
-        }
-
-        /* --- Menu Selection Screen --- */
-        #menu-selection-screen .menu-grid {
+        h1 { color: var(--secondary); margin-bottom: 10px; font-size: 2.2rem; }
+        
+        /* สไตล์หน้าเลือกเมนู */
+        .menu-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 15px;
-            margin-top: 30px;
+            margin-top: 20px;
         }
 
-        #menu-selection-screen .menu-item {
-            cursor: pointer;
+        .menu-item {
+            background: #fff0f3;
             border: 2px solid var(--primary);
             border-radius: 15px;
-            padding: 10px;
-            transition: all 0.2s;
-            background-color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: 0.3s;
         }
 
-        #menu-selection-screen .menu-item:hover {
-            background-color: var(--primary);
+        .menu-item:hover {
+            transform: scale(1.05);
+            background: var(--primary);
             color: white;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        #menu-selection-screen .menu-item:hover img {
-            filter: brightness(0) invert(1); /* Invert image color on hover if it's an icon */
-        }
-        
-        #menu-selection-screen .menu-item img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #eee; /* Light border for images */
-        }
-        #menu-selection-screen .menu-item span {
-            font-weight: bold;
-            font-size: 1.1rem;
         }
 
-        /* --- Baking Screen --- */
-        #baking-screen { display: none; }
-        .target-menu-display { 
-            font-size: 1.8rem; 
-            font-weight: bold; 
-            color: #ff477e; 
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .target-menu-display img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin-right: 15px;
-            border: 2px solid var(--primary);
-        }
+        .menu-emoji { font-size: 3rem; display: block; margin-bottom: 5px; }
+
+        /* สไตล์หน้าทำขนม */
+        .baking-header { font-size: 1.5rem; margin-bottom: 20px; background: #fff0f3; padding: 15px; border-radius: 15px; }
+        .progress-bar { font-size: 1.1rem; color: var(--secondary); margin-bottom: 15px; font-weight: bold; }
 
         .ingredient-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* More flexible grid */
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin-top: 20px;
         }
 
-        button.ingredient {
-            padding: 15px;
-            border: 2px solid var(--primary);
+        .btn-ingredient {
+            padding: 12px 5px;
+            border: 2px solid #ddd;
             background: white;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            font-family: 'Kanit';
             font-size: 1rem;
-            font-weight: 400;
+            transition: 0.2s;
         }
 
-        button.ingredient:hover { background: var(--primary); color: white; }
-        button.ingredient.selected { background: var(--primary); color: white; border-color: var(--secondary); pointer-events: none; }
-        button.ingredient.correct { background: var(--success); border-color: darken(var(--success), 10%); color: white; pointer-events: none; }
-        button.ingredient.incorrect { background: var(--error); border-color: darken(var(--error), 10%); color: white; pointer-events: none; }
-        button.ingredient.disabled { pointer-events: none; opacity: 0.6; } /* For when game ends */
-        
-        .status-msg { 
-            margin-top: 20px; 
-            font-weight: bold; 
-            min-height: 24px; 
-            font-size: 1.2rem;
-        }
-        .progress { margin: 10px 0; color: #888; font-size: 1.1rem; }
-        
-        /* --- Result Screen --- */
-        #result-screen { display: none; }
-        #result-message { 
-            font-size: 2rem; 
-            font-weight: bold; 
-            margin-bottom: 20px;
-        }
-        #result-screen img {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 3px solid var(--primary);
-        }
+        .btn-ingredient:hover { border-color: var(--primary); background: #fff0f3; }
+        .btn-ingredient.correct { background: var(--success) !important; color: white; border-color: #2dc653; }
+        .btn-ingredient.wrong { background: var(--error) !important; color: white; border-color: #d90429; }
 
-        .action-button {
+        .hidden { display: none !important; }
+        
+        .result-overlay {
             margin-top: 20px;
-            padding: 12px 25px;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .btn-main {
+            margin-top: 20px;
+            padding: 12px 30px;
             background: var(--secondary);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             cursor: pointer;
-            font-size: 1.2rem;
-            transition: background-color 0.2s;
+            font-size: 1.1rem;
         }
-        .action-button:hover { background-color: #e65279; }
-
-        /* General utility classes */
-        .hidden { display: none !important; }
-
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <h1>👩‍🍳 Master Pastry Chef 🍰</h1>
+<div class="game-container">
+    <h1>👩‍🍳 Master Pastry Chef</h1>
 
-        <div id="menu-selection-screen">
-            <h2>เลือกเมนูขนมที่อยากทำ</h2>
-            <div id="menu-grid" class="menu-grid">
-                </div>
-        </div>
-
-        <div id="baking-screen" class="hidden">
-            <div class="target-menu-display">
-                <img id="baking-menu-image" src="" alt="ขนมที่กำลังทำ">
-                <span id="baking-menu-name"></span>
-            </div>
-            <p>เลือกวัตถุดิบ 6 อย่างให้ถูกต้อง:</p>
-            <div class="progress" id="progress">วัตถุดิบที่เลือกได้: 0 / 6</div>
-            
-            <div id="ingredient-grid" class="ingredient-grid">
-                </div>
-
-            <div id="message" class="status-msg"></div>
-            <button id="back-to-menu-btn" class="action-button hidden" onclick="showScreen('menu-selection-screen')">กลับไปเลือกเมนู</button>
-        </div>
-
-        <div id="result-screen" class="hidden">
-            <img id="result-menu-image" src="" alt="ผลลัพธ์">
-            <div id="result-message"></div>
-            <button class="action-button" onclick="showScreen('menu-selection-screen')">ทำเมนูอื่น</button>
-        </div>
+    <div id="screen-menu">
+        <p>เลือกเมนูที่คุณต้องการจะทำวันนี้:</p>
+        <div id="menu-list" class="menu-grid"></div>
     </div>
 
-    <script>
-        const recipes = [
-            { id: 'cake', name: "เค้กช็อกโกแลต", image: "https://via.placeholder.com/100/ff8fab/fff?text=Cake", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
-            { id: 'macaron', name: "มาการอง", image: "https://via.placeholder.com0/ff8fab/fff?text=Macaron", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
-            { id: 'applepie', name: "พายแอปเปิ้ล", image: "https://via.placeholder.com/100/ff8fab/fff?text=ApplePie", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
-            { id: 'croissant', name: "ครัวซองต์", image: "https://via.placeholder.com/100/ff8fab/fff?text=Croissant", ingredients: ["แป้งขนมปัง", "ยีสต์", "เนยแท้", "เกลือ", "น้ำตาล", "นมเย็น"] },
-            { id: 'cheesecake', name: "ชีสเค้กหน้าไหม้", image: "https://via.placeholder.com/100/ff8fab/fff?text=Cheese", ingredients: ["ครีมชีส", "วิปปิ้งครีม", "น้ำตาล", "ไข่ไก่", "แป้งข้าวโพด", "กลิ่นวานิลลา"] },
-            { id: 'cookies', name: "คุกกี้ช็อกโกแลตชิพ", image: "https://via.placeholder.com/100/ff8fab/fff?text=Cookie", ingredients: ["เนยละลาย", "น้ำตาลทรายแดง", "ไข่ไก่", "แป้งอเนกประสงค์", "ช็อกโกแลตชิพ", "เบกกิ้งโซดา"] },
-            { id: 'brownie', name: "บราวนี่", image: "https://via.placeholder.com/100/ff8fab/fff?text=Brownie", ingredients: ["ช็อกโกแลตแท้", "เนย", "น้ำตาล", "ไข่ไก่", "แป้งอเนกประสงค์", "เกลือ"] },
-            { id: 'eclair', name: "เอแคลร์", image: "https://via.placeholder.com/100/ff8fab/fff?text=Eclair", ingredients: ["แป้งพัฟ", "เนย", "ไข่ไก่", "น้ำ", "ครีมคัสตาร์ด", "เกลือ"] },
-            { id: 'eggtart', name: "ทาร์ตไข่", image: "https://via.placeholder.com/100/ff8fab/fff?text=EggTart", ingredients: ["แป้งพายชั้น", "ไข่แดง", "วิปปิ้งครีม", "นมสด", "น้ำตาล", "กลิ่นวานิลลา"] },
-            { id: 'donut', name: "โดนัท", image: "https://via.placeholder.com/100/ff8fab/fff?text=Donut", ingredients: ["แป้งขนมปัง", "ยีสต์", "นมสด", "เนย", "น้ำตาล", "น้ำมันพืช"] },
-            { id: 'pancake', name: "แพนเค้ก", image: "https://via.placeholder.com/100/ff8fab/fff?text=Pancake", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "ผงฟู", "เนยละลาย", "น้ำผึ้ง"] },
-            { id: 'waffle', name: "วาฟเฟิล", image: "https://via.placeholder.com/100/ff8fab/fff?text=Waffle", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "น้ำตาล", "เนยละลาย", "ยีสต์"] },
-            { id: 'blueberrypie', name: "บลูเบอร์รี่ชีสพาย", image: "https://via.placeholder.com/100/ff8fab/fff?text=Blueberry", ingredients: ["แครกเกอร์", "เนยละลาย", "ครีมชีส", "นมข้นหวาน", "มะนาว", "บลูเบอร์รี่ซอส"] },
-            { id: 'tiramisu', name: "ทีรามิสุ", image: "https://via.placeholder.com/100/ff8fab/fff?text=Tiramisu", ingredients: ["เลดี้ฟิงเกอร์", "กาแฟ", "มาสคาร์โปเน่", "ไข่แดง", "ผงโกโก้", "เหล้ารัม"] },
-            { id: 'custard', name: "พุดดิ้งคัสตาร์ด", image: "https://via.placeholder.com/100/ff8fab/fff?text=Custard", ingredients: ["ไข่ไก่", "นมสด", "น้ำตาลทราย", "น้ำ", "กลิ่นวานิลลา", "วิปครีม"] },
-            { id: 'muffin', name: "มัฟฟินกล้วยหอม", image: "https://via.placeholder.com/100/ff8fab/fff?text=Muffin", ingredients: ["กล้วยหอม", "แป้งอเนกประสงค์", "ไข่ไก่", "น้ำมัน", "เบกกิ้งโซดา", "น้ำตาลแดง"] },
-            { id: 'scone', name: "สโคน", image: "https://via.placeholder.com/100/ff8fab/fff?text=Scone", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "ผงฟู", "ครีมสด", "ไข่ไก่", "ลูกเกด"] },
-            { id: 'jamroll', name: "แยมโรล", image: "https://via.placeholder.com/100/ff8fab/fff?text=JamRoll", ingredients: ["แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นม", "แยม", "น้ำมันพืช"] },
-            { id: 'buttercake', name: "บัตเตอร์เค้ก", image: "https://via.placeholder.com/100/ff8fab/fff?text=ButterCake", ingredients: ["เนยสด", "แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นมสด", "ผงฟู"] },
-            { id: 'applecrumble', name: "แอปเปิ้ลครัมเบิล", image: "https://via.placeholder.com/100/ff8fab/fff?text=Crumble", ingredients: ["แอปเปิ้ล", "แป้ง", "เนย", "น้ำตาลทรายแดง", "อบเชย", "ข้าวโอ๊ต"] }
-        ];
+    <div id="screen-game" class="hidden">
+        <div class="baking-header">
+            กำลังทำ: <span id="target-emoji"></span> <span id="target-name"></span>
+        </div>
+        <div id="progress" class="progress-bar">เลือกวัตถุดิบ: 0 / 6</div>
+        <div id="ingredient-list" class="ingredient-grid"></div>
+        <div id="game-message" class="result-overlay"></div>
+        <button id="btn-retry" class="btn-main hidden" onclick="resetToMenu()">กลับไปหน้าเลือกเมนู</button>
+    </div>
+</div>
 
-        // วัตถุดิบหลอก (สามารถเพิ่มได้อีก)
-        const fakeIngredients = ["พริกแกง", "ปลาทู", "ซอสหอยนางรม", "น้ำปลาร้า", "กะปิ", "ต้นหอม", "พริกป่น", "น้ำมันงา", "เต้าเจี้ยว", "หมูสับ"];
+<script>
+    const recipes = [
+        { name: "เค้กช็อกโกแลต", emoji: "🎂", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
+        { name: "มาการอง", emoji: "🧁", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
+        { name: "พายแอปเปิ้ล", emoji: "🥧", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
+        { name: "ครัวซองต์", emoji: "🥐", ingredients: ["แป้งขนมปัง", "ยีสต์", "เนยแท้", "เกลือ", "น้ำตาล", "นมเย็น"] },
+        { name: "ชีสเค้ก", emoji: "🍰", ingredients: ["ครีมชีส", "วิปปิ้งครีม", "น้ำตาล", "ไข่ไก่", "แป้งข้าวโพด", "กลิ่นวานิลลา"] },
+        { name: "คุกกี้", emoji: "🍪", ingredients: ["เนยละลาย", "น้ำตาลทรายแดง", "ไข่ไก่", "แป้งอเนกประสงค์", "ช็อกโกแลตชิพ", "เบกกิ้งโซดา"] },
+        { name: "บราวนี่", emoji: "🍫", ingredients: ["ช็อกโกแลตแท้", "เนย", "น้ำตาล", "ไข่ไก่", "แป้งอเนกประสงค์", "เกลือ"] },
+        { name: "โดนัท", emoji: "🍩", ingredients: ["แป้งขนมปัง", "ยีสต์", "นมสด", "เนย", "น้ำตาล", "น้ำมันพืช"] },
+        { name: "แพนเค้ก", emoji: "🥞", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "ผงฟู", "เนยละลาย", "น้ำผึ้ง"] },
+        { name: "วาฟเฟิล", emoji: "🧇", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "น้ำตาล", "เนยละลาย", "ยีสต์"] },
+        { name: "ทีรามิสุ", emoji: "☕", ingredients: ["เลดี้ฟิงเกอร์", "กาแฟ", "มาสคาร์โปเน่", "ไข่แดง", "ผงโกโก้", "เหล้ารัม"] },
+        { name: "ทาร์ตไข่", emoji: "🥧", ingredients: ["แป้งพายชั้น", "ไข่แดง", "วิปปิ้งครีม", "นมสด", "น้ำตาล", "กลิ่นวานิลลา"] },
+        { name: "พุดดิ้ง", emoji: "🍮", ingredients: ["ไข่ไก่", "นมสด", "น้ำตาลทราย", "น้ำ", "กลิ่นวานิลลา", "วิปครีม"] },
+        { name: "มัฟฟิน", emoji: "🧁", ingredients: ["กล้วยหอม", "แป้งอเนกประสงค์", "ไข่ไก่", "น้ำมัน", "เบกกิ้งโซดา", "น้ำตาลแดง"] },
+        { name: "สโคน", emoji: "🍪", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "ผงฟู", "ครีมสด", "ไข่ไก่", "ลูกเกด"] },
+        { name: "แยมโรล", emoji: "🍥", ingredients: ["แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นม", "แยม", "น้ำมันพืช"] },
+        { name: "บัตเตอร์เค้ก", emoji: "🧈", ingredients: ["เนยสด", "แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นมสด", "ผงฟู"] },
+        { name: "ขนมปังปิ้ง", emoji: "🍞", ingredients: ["ขนมปัง", "เนยเค็ม", "น้ำตาลทราย", "นมข้นหวาน", "สังขยา", "น้ำมัน"] },
+        { name: "ไอศกรีมทอด", emoji: "🍨", ingredients: ["ไอศกรีม", "ขนมปัง", "แป้งทอดกรอบ", "น้ำมันพืช", "เกล็ดขนมปัง", "ไข่ไก่"] },
+        { name: "โมจิ", emoji: "🍡", ingredients: ["แป้งข้าวเหนียว", "น้ำตาล", "แป้งมัน", "ถั่วแดง", "น้ำ", "สีผสมอาหาร"] }
+    ];
+
+    const distractors = ["พริก", "น้ำปลา", "ซีอิ๊ว", "กระเทียม", "กุ้งสด", "ผักชี", "หอมหัวใหญ่", "เนื้อหมู"];
+    
+    let currentRecipe = null;
+    let score = 0;
+    let isGameOver = false;
+
+    // สร้างเมนูหน้าแรก
+    function initMenu() {
+        const menuList = document.getElementById('menu-list');
+        menuList.innerHTML = '';
+        recipes.forEach((recipe, index) => {
+            const div = document.createElement('div');
+            div.className = 'menu-item';
+            div.innerHTML = `<span class="menu-emoji">${recipe.emoji}</span><span>${recipe.name}</span>`;
+            div.onclick = () => startBaking(index);
+            menuList.appendChild(div);
+        });
+    }
+
+    // เริ่มทำขนม
+    function startBaking(index) {
+        currentRecipe = recipes[index];
+        score = 0;
+        isGameOver = false;
         
-        let currentRecipe = null;
-        let selectedCorrectIngredients = [];
-        let gameActive = false;
+        document.getElementById('screen-menu').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        document.getElementById('btn-retry').classList.add('hidden');
+        document.getElementById('game-message').innerText = '';
+        
+        document.getElementById('target-name').innerText = currentRecipe.name;
+        document.getElementById('target-emoji').innerText = currentRecipe.emoji;
+        updateProgress();
+        renderIngredients();
+    }
 
-        // --- Screen Management ---
-        function showScreen(screenId) {
-            document.getElementById('menu-selection-screen').classList.add('hidden');
-            document.getElementById('baking-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById(screenId).classList.remove('hidden');
-        }
+    // สุ่มวัตถุดิบมาให้เลือก
+    function renderIngredients() {
+        const list = document.getElementById('ingredient-list');
+        list.innerHTML = '';
+        
+        // รวมของจริง + ของหลอก
+        let options = [...currentRecipe.ingredients, ...distractors.slice(0, 3)];
+        options = options.sort(() => Math.random() - 0.5); // Shuffle
 
-        // --- Menu Selection Screen Functions ---
-        function loadMenuSelection() {
-            const menuGrid = document.getElementById('menu-grid');
-            menuGrid.innerHTML = ''; // Clear previous items
+        options.forEach(ing => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-ingredient';
+            btn.innerText = ing;
+            btn.onclick = () => selectIngredient(ing, btn);
+            list.appendChild(btn);
+        });
+    }
 
-            recipes.forEach(recipe => {
-                const menuItem = document.createElement('div');
-                menuItem.className = 'menu-item';
-                menuItem.onclick = () => selectRecipe(recipe);
-                menuItem.innerHTML = `
-                    <img src="${recipe.image}" alt="${recipe.name}">
-                    <span>${recipe.name}</span>
-                `;
-                menuGrid.appendChild(menuItem);
-            });
-            showScreen('menu-selection-screen');
-        }
+    // ตรวจสอบสิ่งที่เลือก
+    function selectIngredient(ing, btn) {
+        if (isGameOver) return;
 
-        function selectRecipe(recipe) {
-            currentRecipe = recipe;
-            startBakingGame();
-        }
-
-        // --- Baking Screen Functions ---
-        function startBakingGame() {
-            selectedCorrectIngredients = [];
-            gameActive = true;
-            document.getElementById('message').innerText = "";
-            document.getElementById('progress').innerText = `วัตถุดิบที่เลือกได้: 0 / 6`;
-            document.getElementById('back-to-menu-btn').classList.add('hidden'); // Hide back button initially
-
-            // Update baking screen UI
-            document.getElementById('baking-menu-name').innerText = currentRecipe.name;
-            document.getElementById('baking-menu-image').src = currentRecipe.image;
-            document.getElementById('baking-menu-image').alt = currentRecipe.name;
-
-            // Prepare ingredients for selection
-            let options = [...currentRecipe.ingredients];
-            // Add fake ingredients, ensuring no duplicates with correct ones
-            let tempFakeIngredients = fakeIngredients.filter(item => !currentRecipe.ingredients.includes(item));
-            options = options.concat(tempFakeIngredients.slice(0, 6)); // 6 correct + 6 fake = 12 total options
-            
-            options.sort(() => Math.random() - 0.5); // Shuffle
-
-            const ingredientGrid = document.getElementById('ingredient-grid');
-            ingredientGrid.innerHTML = '';
-            options.forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = 'ingredient';
-                btn.innerText = item;
-                btn.onclick = () => checkIngredient(item, btn);
-                ingredientGrid.appendChild(btn);
-            });
-            showScreen('baking-screen');
-        }
-
-        function checkIngredient(item, btn) {
-            if (!gameActive) return; // Prevent clicks after game ends
-
-            if (currentRecipe.ingredients.includes(item)) {
-                if (!selectedCorrectIngredients.includes(item)) { // Ensure item not selected twice
-                    btn.classList.add('correct');
-                    btn.classList.add('selected'); // Also mark as selected
-                    selectedCorrectIngredients.push(item);
-                    document.getElementById('progress').innerText = `วัตถุดิบที่เลือกได้: ${selectedCorrectIngredients.length} / 6`;
-                    
-                    if (selectedCorrectIngredients.length === 6) {
-                        document.getElementById('message').innerText = "✨ ยอดเยี่ยม! ทำสำเร็จแล้ว ขนมน่าทานมาก!";
-                        document.getElementById('message').style.color = "green";
-                        endGame(true);
-                    }
+        if (currentRecipe.ingredients.includes(ing)) {
+            if (!btn.classList.contains('correct')) {
+                btn.classList.add('correct');
+                score++;
+                updateProgress();
+                if (score === 6) {
+                    winGame();
                 }
-            } else {
-                btn.classList.add('incorrect');
-                document.getElementById('message').innerText = `❌ ว้าย! ${item} ไม่ใช่ส่วนผสมของ ${currentRecipe.name} ขนมพังหมดเลย!`;
-                document.getElementById('message').style.color = "red";
-                endGame(false);
             }
+        } else {
+            btn.classList.add('wrong');
+            loseGame(ing);
         }
+    }
 
-        function endGame(isSuccess) {
-            gameActive = false;
-            const buttons = document.querySelectorAll('#ingredient-grid .ingredient');
-            buttons.forEach(b => {
-                b.classList.add('disabled'); // Disable all buttons
-                if (currentRecipe.ingredients.includes(b.innerText) && !b.classList.contains('correct')) {
-                    // Highlight correct ones that were missed if the player failed
-                    b.style.border = '2px solid var(--success)';
-                }
-            });
+    function updateProgress() {
+        document.getElementById('progress').innerText = `เลือกวัตถุดิบที่ถูกต้อง: ${score} / 6`;
+    }
 
-            // Show result screen after a short delay
-            setTimeout(() => showResultScreen(isSuccess), 1500);
-        }
+    function winGame() {
+        isGameOver = true;
+        const msg = document.getElementById('game-message');
+        msg.innerText = "✨ สุดยอด! คุณทำ " + currentRecipe.name + " สำเร็จแล้ว!";
+        msg.style.color = "green";
+        document.getElementById('btn-retry').classList.remove('hidden');
+    }
 
-        // --- Result Screen Functions ---
-        function showResultScreen(isSuccess) {
-            const resultMessage = document.getElementById('result-message');
-            const resultImage = document.getElementById('result-menu-image');
+    function loseGame(ing) {
+        isGameOver = true;
+        const msg = document.getElementById('game-message');
+        msg.innerText = "❌ พลาดแล้ว! " + ing + " ไม่ใส่ในนี้ ขนมพังหมดเลย!";
+        msg.style.color = "red";
+        document.getElementById('btn-retry').classList.remove('hidden');
+    }
 
-            resultImage.src = currentRecipe.image;
-            resultImage.alt = currentRecipe.name;
-            resultImage.style.borderColor = isSuccess ? 'var(--success)' : 'var(--error)';
+    function resetToMenu() {
+        document.getElementById('screen-menu').classList.remove('hidden');
+        document.getElementById('screen-game').classList.add('hidden');
+    }
 
-            if (isSuccess) {
-                resultMessage.innerText = `🎉 ยอดเยี่ยม! คุณทำ ${currentRecipe.name} สำเร็จ!`;
-                resultMessage.style.color = 'var(--success)';
-            } else {
-                resultMessage.innerText = `😢 เสียใจด้วย! คุณทำ ${currentRecipe.name} ไม่สำเร็จ...`;
-                resultMessage.style.color = 'var(--error)';
-            }
-            showScreen('result-screen');
-        }
+    // เริ่มต้นแอป
+    initMenu();
+</script>
 
-        // Initialize the game
-        loadMenuSelection();
-    </script>
 </body>
 </html>
