@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Pastry Chef - เกมทำขนม</title>
+    <style>
+        :root {
+            --primary: #ff8fab;
+            --secondary: #fb6f92;
+            --bg: #ffe5ec;
+            --dark: #4a4e69;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 { color: var(--secondary); margin-bottom: 10px; }
+        .target-menu { font-size: 1.5rem; font-weight: bold; color: #ff477e; margin-bottom: 20px; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button.ingredient {
+            padding: 15px;
+            border: 2px solid var(--primary);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button.ingredient:hover { background: var(--primary); color: white; }
+        button.ingredient.correct { background: #7ae582; border-color: #2dc653; color: white; pointer-events: none; }
+        
+        .status-msg { margin-top: 20px; font-weight: bold; min-height: 24px; }
+        .progress { margin: 10px 0; color: #888; }
+        
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>👩‍🍳 ห้องครัวมหัศจรรย์ 🍰</h1>
+        <p>โจทย์วันนี้คือการทำ:</p>
+        <div id="target-name" class="target-menu">กำลังสุ่มเมนู...</div>
+        <div class="progress" id="progress">วัตถุดิบที่เลือกได้: 0 / 6</div>
+        
+        <div id="ingredient-grid" class="grid">
+            </div>
+
+        <div id="message" class="status-msg"></div>
+        <button id="reset-btn" class="reset-btn" onclick="initGame()">เล่นใหม่อีกครั้ง</button>
+    </div>
+
+    <script>
+        const recipes = [
+            { name: "เค้กช็อกโกแลต", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
+            { name: "มาการอง", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
+            { name: "พายแอปเปิ้ล", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
+            { name: "ครัวซองต์", ingredients: ["แป้งขนมปัง", "ยีสต์", "เนยแท้", "เกลือ", "น้ำตาล", "นมเย็น"] },
+            { name: "ชีสเค้กหน้าไหม้", ingredients: ["ครีมชีส", "วิปปิ้งครีม", "น้ำตาล", "ไข่ไก่", "แป้งข้าวโพด", "กลิ่นวานิลลา"] },
+            { name: "คุกกี้ช็อกโกแลตชิพ", ingredients: ["เนยละลาย", "น้ำตาลทรายแดง", "ไข่ไก่", "แป้งอเนกประสงค์", "ช็อกโกแลตชิพ", "เบกกิ้งโซดา"] },
+            { name: "บราวนี่", ingredients: ["ช็อกโกแลตแท้", "เนย", "น้ำตาล", "ไข่ไก่", "แป้งอเนกประสงค์", "เกลือ"] },
+            { name: "เอแคลร์", ingredients: ["แป้งพัฟ", "เนย", "ไข่ไก่", "น้ำ", "ครีมคัสตาร์ด", "เกลือ"] },
+            { name: "ทาร์ตไข่", ingredients: ["แป้งพายชั้น", "ไข่แดง", "วิปปิ้งครีม", "นมสด", "น้ำตาล", "กลิ่นวานิลลา"] },
+            { name: "โดนัท", ingredients: ["แป้งขนมปัง", "ยีสต์", "นมสด", "เนย", "น้ำตาล", "น้ำมันพืช"] },
+            { name: "แพนเค้ก", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "ผงฟู", "เนยละลาย", "น้ำผึ้ง"] },
+            { name: "วาฟเฟิล", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "น้ำตาล", "เนยละลาย", "ยีสต์"] },
+            { name: "บลูเบอร์รี่ชีสพาย", ingredients: ["แครกเกอร์", "เนยละลาย", "ครีมชีส", "นมข้นหวาน", "มะนาว", "บลูเบอร์รี่ซอส"] },
+            { name: "ทีรามิสุ", ingredients: ["เลดี้ฟิงเกอร์", "กาแฟ", "มาสคาร์โปเน่", "ไข่แดง", "ผงโกโก้", "เหล้ารัม"] },
+            { name: "พุดดิ้งคัสตาร์ด", ingredients: ["ไข่ไก่", "นมสด", "น้ำตาลทราย", "น้ำ", "กลิ่นวานิลลา", "วิปครีม"] },
+            { name: "มัฟฟินกล้วยหอม", ingredients: ["กล้วยหอม", "แป้งอเนกประสงค์", "ไข่ไก่", "น้ำมัน", "เบกกิ้งโซดา", "น้ำตาลแดง"] },
+            { name: "สโคน", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "ผงฟู", "ครีมสด", "ไข่ไก่", "ลูกเกด"] },
+            { name: "แยมโรล", ingredients: ["แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นม", "แยม", "น้ำมันพืช"] },
+            { name: "บัตเตอร์เค้ก", ingredients: ["เนยสด", "แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นมสด", "ผงฟู"] },
+            { name: "แอปเปิ้ลครัมเบิล", ingredients: ["แอปเปิ้ล", "แป้ง", "เนย", "น้ำตาลทรายแดง", "อบเชย", "ข้าวโอ๊ต"] }
+        ];
+
+        const fakeIngredients = ["พริกแกง", "ปลาทู", "ซอสหอยนางรม", "น้ำปลาร้า", "กะปิ", "ต้นหอม", "พริกป่น"];
+        
+        let currentRecipe = {};
+        let selectedCount = 0;
+
+        function initGame() {
+            // สุ่มเมนู
+            currentRecipe = recipes[Math.floor(Math.random() * recipes.length)];
+            selectedCount = 0;
+            
+            document.getElementById('target-name').innerText = currentRecipe.name;
+            document.getElementById('message').innerText = "";
+            document.getElementById('message').style.color = "black";
+            document.getElementById('progress').innerText = `วัตถุดิบที่เลือกได้: 0 / 6`;
+            document.getElementById('reset-btn').style.display = "none";
+            
+            // เตรียมตัวเลือก
+            let options = [...currentRecipe.ingredients, ...fakeIngredients.slice(0, 4)];
+            options.sort(() => Math.random() - 0.5); // Shuffle
+
+            const grid = document.getElementById('ingredient-grid');
+            grid.innerHTML = "";
+            options.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'ingredient';
+                btn.innerText = item;
+                btn.onclick = () => checkIngredient(item, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkIngredient(item, btn) {
+            if (currentRecipe.ingredients.includes(item)) {
+                btn.classList.add('correct');
+                selectedCount++;
+                document.getElementById('progress').innerText = `วัตถุดิบที่เลือกได้: ${selectedCount} / 6`;
+                
+                if (selectedCount === 6) {
+                    document.getElementById('message').innerText = "✨ เย้! ทำสำเร็จแล้ว ขนมน่าทานมาก!";
+                    document.getElementById('message').style.color = "green";
+                    endGame();
+                }
+            } else {
+                document.getElementById('message').innerText = `❌ ว้าย! ${item} ใส่ไม่ได้นะ ขนมพังหมดเลย!`;
+                document.getElementById('message').style.color = "red";
+                endGame();
+            }
+        }
+
+        function endGame() {
+            const buttons = document.querySelectorAll('.ingredient');
+            buttons.forEach(b => b.style.pointerEvents = 'none');
+            document.getElementById('reset-btn').style.display = "inline-block";
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
