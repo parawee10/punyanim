@@ -3,42 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Pastry Chef - เกมทำขนม</title>
+    <title>Master Chef: Pro Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #ff8fab;
             --secondary: #fb6f92;
-            --bg: #ffe5ec;
-            --dark: #4a4e69;
-            --success: #7ae582;
-            --error: #ff6b6b;
+            --savory: #4cc9f0;
+            --bg: #f0f2f5;
+            --dark: #2b2d42;
+            --success: #2ecc71;
+            --error: #e74c3c;
         }
 
         body {
             font-family: 'Kanit', sans-serif;
             background-color: var(--bg);
-            color: var(--dark);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
             margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
         }
 
         .game-container {
             background: white;
             padding: 2rem;
-            border-radius: 25px;
+            border-radius: 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 700px;
+            max-width: 850px;
             width: 100%;
             text-align: center;
         }
 
-        h1 { color: var(--secondary); margin-bottom: 10px; font-size: 2.2rem; }
-        
-        /* สไตล์หน้าเลือกเมนู */
+        h1 { color: var(--secondary); margin: 0; font-size: 2.5rem; }
+        .sub-title { color: #666; margin-bottom: 25px; }
+
+        .category-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 25px; border-radius: 25px; border: 2px solid #ddd; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .tab.active.sweet { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab.active.savory { background: var(--savory); color: white; border-color: var(--savory); }
+
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -47,214 +51,233 @@
         }
 
         .menu-item {
-            background: #fff0f3;
-            border: 2px solid var(--primary);
-            border-radius: 15px;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 20px;
             padding: 15px;
             cursor: pointer;
             transition: 0.3s;
         }
 
-        .menu-item:hover {
-            transform: scale(1.05);
-            background: var(--primary);
-            color: white;
-        }
-
+        .menu-item:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); border-color: var(--secondary); }
         .menu-emoji { font-size: 3rem; display: block; margin-bottom: 5px; }
 
-        /* สไตล์หน้าทำขนม */
-        .baking-header { font-size: 1.5rem; margin-bottom: 20px; background: #fff0f3; padding: 15px; border-radius: 15px; }
-        .progress-bar { font-size: 1.1rem; color: var(--secondary); margin-bottom: 15px; font-weight: bold; }
+        .baking-header { font-size: 1.8rem; margin-bottom: 20px; padding: 20px; border-radius: 20px; font-weight: bold; }
+        .progress-bar { font-size: 1.2rem; margin-bottom: 15px; color: var(--dark); }
 
         .ingredient-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 10px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 20px;
         }
 
         .btn-ingredient {
-            padding: 12px 5px;
+            padding: 15px 5px;
             border: 2px solid #ddd;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-family: 'Kanit';
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: 0.2s;
         }
 
-        .btn-ingredient:hover { border-color: var(--primary); background: #fff0f3; }
-        .btn-ingredient.correct { background: var(--success) !important; color: white; border-color: #2dc653; }
-        .btn-ingredient.wrong { background: var(--error) !important; color: white; border-color: #d90429; }
+        .btn-ingredient:hover:not(.disabled) { border-color: var(--secondary); background: #fff0f3; }
+        .btn-ingredient.correct { background: var(--success) !important; color: white; border-color: #27ae60; cursor: default; }
+        .btn-ingredient.wrong { background: var(--error) !important; color: white; border-color: #c0392b; cursor: default; }
 
         .hidden { display: none !important; }
-        
-        .result-overlay {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 15px;
-            font-size: 1.3rem;
-            font-weight: bold;
-        }
+        .result-msg { margin-top: 20px; font-size: 1.4rem; font-weight: bold; height: 35px; }
 
         .btn-main {
             margin-top: 20px;
-            padding: 12px 30px;
-            background: var(--secondary);
+            padding: 12px 35px;
+            background: var(--dark);
             color: white;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             font-size: 1.1rem;
+            transition: 0.3s;
         }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <h1>👩‍🍳 Master Pastry Chef</h1>
-
     <div id="screen-menu">
-        <p>เลือกเมนูที่คุณต้องการจะทำวันนี้:</p>
+        <h1>👩‍🍳 Master Chef 👨‍🍳</h1>
+        <p class="sub-title">เลือกเมนูที่ต้องการพิสูจน์ฝีมือ (ระวังตัวหลอกให้ดี!)</p>
+        <div class="category-tabs">
+            <div id="tab-sweet" class="tab active sweet" onclick="changeTab('sweet')">ของหวาน (20)</div>
+            <div id="tab-savory" class="tab savory" onclick="changeTab('savory')">ของคาว (10)</div>
+        </div>
         <div id="menu-list" class="menu-grid"></div>
     </div>
 
     <div id="screen-game" class="hidden">
-        <div class="baking-header">
-            กำลังทำ: <span id="target-emoji"></span> <span id="target-name"></span>
-        </div>
-        <div id="progress" class="progress-bar">เลือกวัตถุดิบ: 0 / 6</div>
+        <div id="game-header" class="baking-header"></div>
+        <div id="progress" class="progress-bar">เลือกวัตถุดิบที่ถูกต้อง: 0 / 6</div>
         <div id="ingredient-list" class="ingredient-grid"></div>
-        <div id="game-message" class="result-overlay"></div>
-        <button id="btn-retry" class="btn-main hidden" onclick="resetToMenu()">กลับไปหน้าเลือกเมนู</button>
+        <div id="message" class="result-msg"></div>
+        <button id="btn-back" class="btn-main hidden" onclick="goBack()">กลับไปเลือกเมนูใหม่</button>
     </div>
 </div>
 
 <script>
     const recipes = [
-        { name: "เค้กช็อกโกแลต", emoji: "🎂", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
-        { name: "มาการอง", emoji: "🧁", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
-        { name: "พายแอปเปิ้ล", emoji: "🥧", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
-        { name: "ครัวซองต์", emoji: "🥐", ingredients: ["แป้งขนมปัง", "ยีสต์", "เนยแท้", "เกลือ", "น้ำตาล", "นมเย็น"] },
-        { name: "ชีสเค้ก", emoji: "🍰", ingredients: ["ครีมชีส", "วิปปิ้งครีม", "น้ำตาล", "ไข่ไก่", "แป้งข้าวโพด", "กลิ่นวานิลลา"] },
-        { name: "คุกกี้", emoji: "🍪", ingredients: ["เนยละลาย", "น้ำตาลทรายแดง", "ไข่ไก่", "แป้งอเนกประสงค์", "ช็อกโกแลตชิพ", "เบกกิ้งโซดา"] },
-        { name: "บราวนี่", emoji: "🍫", ingredients: ["ช็อกโกแลตแท้", "เนย", "น้ำตาล", "ไข่ไก่", "แป้งอเนกประสงค์", "เกลือ"] },
-        { name: "โดนัท", emoji: "🍩", ingredients: ["แป้งขนมปัง", "ยีสต์", "นมสด", "เนย", "น้ำตาล", "น้ำมันพืช"] },
-        { name: "แพนเค้ก", emoji: "🥞", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "ผงฟู", "เนยละลาย", "น้ำผึ้ง"] },
-        { name: "วาฟเฟิล", emoji: "🧇", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "น้ำตาล", "เนยละลาย", "ยีสต์"] },
-        { name: "ทีรามิสุ", emoji: "☕", ingredients: ["เลดี้ฟิงเกอร์", "กาแฟ", "มาสคาร์โปเน่", "ไข่แดง", "ผงโกโก้", "เหล้ารัม"] },
-        { name: "ทาร์ตไข่", emoji: "🥧", ingredients: ["แป้งพายชั้น", "ไข่แดง", "วิปปิ้งครีม", "นมสด", "น้ำตาล", "กลิ่นวานิลลา"] },
-        { name: "พุดดิ้ง", emoji: "🍮", ingredients: ["ไข่ไก่", "นมสด", "น้ำตาลทราย", "น้ำ", "กลิ่นวานิลลา", "วิปครีม"] },
-        { name: "มัฟฟิน", emoji: "🧁", ingredients: ["กล้วยหอม", "แป้งอเนกประสงค์", "ไข่ไก่", "น้ำมัน", "เบกกิ้งโซดา", "น้ำตาลแดง"] },
-        { name: "สโคน", emoji: "🍪", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "ผงฟู", "ครีมสด", "ไข่ไก่", "ลูกเกด"] },
-        { name: "แยมโรล", emoji: "🍥", ingredients: ["แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นม", "แยม", "น้ำมันพืช"] },
-        { name: "บัตเตอร์เค้ก", emoji: "🧈", ingredients: ["เนยสด", "แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นมสด", "ผงฟู"] },
-        { name: "ขนมปังปิ้ง", emoji: "🍞", ingredients: ["ขนมปัง", "เนยเค็ม", "น้ำตาลทราย", "นมข้นหวาน", "สังขยา", "น้ำมัน"] },
-        { name: "ไอศกรีมทอด", emoji: "🍨", ingredients: ["ไอศกรีม", "ขนมปัง", "แป้งทอดกรอบ", "น้ำมันพืช", "เกล็ดขนมปัง", "ไข่ไก่"] },
-        { name: "โมจิ", emoji: "🍡", ingredients: ["แป้งข้าวเหนียว", "น้ำตาล", "แป้งมัน", "ถั่วแดง", "น้ำ", "สีผสมอาหาร"] }
+        // ของหวาน (20 เมนู)
+        { type: "sweet", name: "เค้กช็อกโกแลต", emoji: "🎂", ingredients: ["แป้งเค้ก", "ผงโกโก้", "ไข่ไก่", "เนยจืด", "น้ำตาลทราย", "นมสด"] },
+        { type: "sweet", name: "มาการอง", emoji: "🧁", ingredients: ["ผงอัลมอนด์", "น้ำตาลไอซิ่ง", "ไข่ขาว", "น้ำตาลทราย", "กลิ่นวานิลลา", "สีผสมอาหาร"] },
+        { type: "sweet", name: "พายแอปเปิ้ล", emoji: "🥧", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "แอปเปิ้ล", "อบเชย", "น้ำตาลทรายแดง", "น้ำเย็น"] },
+        { type: "sweet", name: "ครัวซองต์", emoji: "🥐", ingredients: ["แป้งขนมปัง", "ยีสต์", "เนยแท้", "เกลือ", "น้ำตาล", "นมเย็น"] },
+        { type: "sweet", name: "ชีสเค้ก", emoji: "🍰", ingredients: ["ครีมชีส", "วิปปิ้งครีม", "น้ำตาล", "ไข่ไก่", "แป้งข้าวโพด", "กลิ่นวานิลลา"] },
+        { type: "sweet", name: "คุกกี้", emoji: "🍪", ingredients: ["เนยละลาย", "น้ำตาลทรายแดง", "ไข่ไก่", "แป้งอเนกประสงค์", "ช็อกโกแลตชิพ", "เบกกิ้งโซดา"] },
+        { type: "sweet", name: "บราวนี่", emoji: "🍫", ingredients: ["ช็อกโกแลตแท้", "เนย", "น้ำตาล", "ไข่ไก่", "แป้งอเนกประสงค์", "เกลือ"] },
+        { type: "sweet", name: "โดนัท", emoji: "🍩", ingredients: ["แป้งขนมปัง", "ยีสต์", "นมสด", "เนย", "น้ำตาล", "น้ำมันพืช"] },
+        { type: "sweet", name: "แพนเค้ก", emoji: "🥞", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "ผงฟู", "เนยละลาย", "น้ำผึ้ง"] },
+        { type: "sweet", name: "วาฟเฟิล", emoji: "🧇", ingredients: ["แป้ง", "นมสด", "ไข่ไก่", "น้ำตาล", "เนยละลาย", "ยีสต์"] },
+        { type: "sweet", name: "ทีรามิสุ", emoji: "☕", ingredients: ["เลดี้ฟิงเกอร์", "กาแฟ", "มาสคาร์โปเน่", "ไข่แดง", "ผงโกโก้", "เหล้ารัม"] },
+        { type: "sweet", name: "ทาร์ตไข่", emoji: "🥧", ingredients: ["แป้งพายชั้น", "ไข่แดง", "วิปปิ้งครีม", "นมสด", "น้ำตาล", "กลิ่นวานิลลา"] },
+        { type: "sweet", name: "พุดดิ้ง", emoji: "🍮", ingredients: ["ไข่ไก่", "นมสด", "น้ำตาลทราย", "น้ำ", "กลิ่นวานิลลา", "วิปครีม"] },
+        { type: "sweet", name: "มัฟฟิน", emoji: "🧁", ingredients: ["กล้วยหอม", "แป้งอเนกประสงค์", "ไข่ไก่", "น้ำมัน", "เบกกิ้งโซดา", "น้ำตาลแดง"] },
+        { type: "sweet", name: "สโคน", emoji: "🍪", ingredients: ["แป้งอเนกประสงค์", "เนยเย็น", "ผงฟู", "ครีมสด", "ไข่ไก่", "ลูกเกด"] },
+        { type: "sweet", name: "แยมโรล", emoji: "🍥", ingredients: ["แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นม", "แยม", "น้ำมันพืช"] },
+        { type: "sweet", name: "บัตเตอร์เค้ก", emoji: "🧈", ingredients: ["เนยสด", "แป้งเค้ก", "ไข่ไก่", "น้ำตาล", "นมสด", "ผงฟู"] },
+        { type: "sweet", name: "บิงซู", emoji: "🍧", ingredients: ["น้ำแข็งไส", "นมข้นหวาน", "ผลไม้สด", "ถั่วแดง", "ผงมัทฉะ", "วิปปิ้งครีม"] },
+        { type: "sweet", name: "ไอศกรีมทอด", emoji: "🍨", ingredients: ["ไอศกรีม", "ขนมปัง", "แป้งทอดกรอบ", "น้ำมันพืช", "เกล็ดขนมปัง", "ไข่ไก่"] },
+        { type: "sweet", name: "โมจิ", emoji: "🍡", ingredients: ["แป้งข้าวเหนียว", "น้ำตาล", "แป้งมัน", "ถั่วแดง", "น้ำ", "สีผสมอาหาร"] },
+
+        // ของคาว (10 เมนู)
+        { type: "savory", name: "ต้มยำกุ้ง", emoji: "🦐", ingredients: ["กุ้ง", "ตะไคร้", "ใบมะกรูด", "เห็ดฟาง", "มะนาว", "พริกเผา"] },
+        { type: "savory", name: "กะเพราไข่ดาว", emoji: "🍳", ingredients: ["ใบกะเพรา", "เนื้อหมู", "พริกขี้หนู", "กระเทียม", "น้ำปลา", "ไข่ไก่"] },
+        { type: "savory", name: "ส้มตำไทย", emoji: "🥗", ingredients: ["มะละกอ", "ถั่วฝักยาว", "มะเขือเทศ", "กุ้งแห้ง", "ถั่วลิสง", "น้ำตาลปี๊บ"] },
+        { type: "savory", name: "แกงเขียวหวาน", emoji: "🥘", ingredients: ["พริกแกงเขียวหวาน", "กะทิ", "เนื้อไก่", "มะเขือเปราะ", "ใบโหระพา", "น้ำตาลมะพร้าว"] },
+        { type: "savory", name: "ผัดไทย", emoji: "🍝", ingredients: ["เส้นเล็ก", "เต้าหู้เหลือง", "ถั่วงอก", "กุ้งสด", "ไข่ไก่", "น้ำมะขามเปียก"] },
+        { type: "savory", name: "ข้าวผัดปู", emoji: "🦀", ingredients: ["ข้าวสวย", "เนื้อปู", "ไข่ไก่", "ต้นหอม", "ซีอิ๊วขาว", "เนย"] },
+        { type: "savory", name: "มัสมั่นไก่", emoji: "🍗", ingredients: ["น่องไก่", "มันฝรั่ง", "ถั่วลิสง", "พริกแกงมัสมั่น", "กะทิ", "หอมหัวใหญ่"] },
+        { type: "savory", name: "ลาบหมู", emoji: "🌶️", ingredients: ["หมูสับ", "ข้าวคั่ว", "พริกป่น", "มะนาว", "หอมแดง", "ผักชีฝรั่ง"] },
+        { type: "savory", name: "ราเมง", emoji: "🍜", ingredients: ["เส้นราเมง", "น้ำซุปหมู", "หมูชาชู", "ไข่ต้ม", "หน่อไม้", "สาหร่าย"] },
+        { type: "savory", name: "สเต็กเนื้อ", emoji: "🥩", ingredients: ["เนื้อวัว", "เนย", "กระเทียม", "โรสแมรี่", "พริกไทยดำ", "เกลือ"] }
     ];
 
-    const distractors = ["พริก", "น้ำปลา", "ซีอิ๊ว", "กระเทียม", "กุ้งสด", "ผักชี", "หอมหัวใหญ่", "เนื้อหมู"];
-    
     let currentRecipe = null;
     let score = 0;
     let isGameOver = false;
 
-    // สร้างเมนูหน้าแรก
-    function initMenu() {
-        const menuList = document.getElementById('menu-list');
-        menuList.innerHTML = '';
-        recipes.forEach((recipe, index) => {
-            const div = document.createElement('div');
-            div.className = 'menu-item';
-            div.innerHTML = `<span class="menu-emoji">${recipe.emoji}</span><span>${recipe.name}</span>`;
-            div.onclick = () => startBaking(index);
-            menuList.appendChild(div);
+    function changeTab(type) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + type).classList.add('active');
+        renderMenu(type);
+    }
+
+    function renderMenu(type) {
+        const list = document.getElementById('menu-list');
+        list.innerHTML = '';
+        recipes.filter(r => r.type === type).forEach(recipe => {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.innerHTML = `<span class="menu-emoji">${recipe.emoji}</span>${recipe.name}`;
+            item.onclick = () => startGame(recipe);
+            list.appendChild(item);
         });
     }
 
-    // เริ่มทำขนม
-    function startBaking(index) {
-        currentRecipe = recipes[index];
+    function startGame(recipe) {
+        currentRecipe = recipe;
         score = 0;
         isGameOver = false;
-        
         document.getElementById('screen-menu').classList.add('hidden');
         document.getElementById('screen-game').classList.remove('hidden');
-        document.getElementById('btn-retry').classList.add('hidden');
-        document.getElementById('game-message').innerText = '';
+        document.getElementById('message').innerText = '';
+        document.getElementById('btn-back').classList.add('hidden');
         
-        document.getElementById('target-name').innerText = currentRecipe.name;
-        document.getElementById('target-emoji').innerText = currentRecipe.emoji;
+        const header = document.getElementById('game-header');
+        header.innerText = `กำลังทำ: ${recipe.emoji} ${recipe.name}`;
+        header.style.background = recipe.type === 'sweet' ? '#fff0f3' : '#e3f2fd';
+        header.style.color = recipe.type === 'sweet' ? 'var(--secondary)' : 'var(--savory)';
+
         updateProgress();
         renderIngredients();
     }
 
-    // สุ่มวัตถุดิบมาให้เลือก
     function renderIngredients() {
         const list = document.getElementById('ingredient-list');
         list.innerHTML = '';
+
+        // --- ระบบสุ่มวัตถุดิบหลอกที่ยากขึ้น ---
+        // 1. วัตถุดิบจริง 6 อย่าง
+        let options = [...currentRecipe.ingredients];
+
+        // 2. ดึงวัตถุดิบจากเมนูอื่นๆ ใน "หมวดเดียวกัน" มาหลอก (เพิ่มความสับสน)
+        let sameTypeIngredients = [];
+        recipes.filter(r => r.type === currentRecipe.type && r.name !== currentRecipe.name)
+               .forEach(r => sameTypeIngredients.push(...r.ingredients));
         
-        // รวมของจริง + ของหลอก
-        let options = [...currentRecipe.ingredients, ...distractors.slice(0, 3)];
-        options = options.sort(() => Math.random() - 0.5); // Shuffle
+        // กรองเอาเฉพาะตัวที่ไม่ซ้ำกับของจริง
+        sameTypeIngredients = [...new Set(sameTypeIngredients)].filter(i => !currentRecipe.ingredients.includes(i));
+        let smartFakes = sameTypeIngredients.sort(() => 0.5 - Math.random()).slice(0, 9); // สุ่มมา 9 อย่าง
+        options.push(...smartFakes);
+
+        // 3. ดึงวัตถุดิบจาก "หมวดตรงข้าม" มานิดหน่อย (หลอกพื้นฐาน)
+        let otherTypeIngredients = [];
+        recipes.filter(r => r.type !== currentRecipe.type)
+               .forEach(r => otherTypeIngredients.push(...r.ingredients));
+        let crossFakes = otherTypeIngredients.sort(() => 0.5 - Math.random()).slice(0, 3); // สุ่มมา 3 อย่าง
+        options.push(...crossFakes);
+
+        // รวมทั้งหมด 18 อย่างแล้ว Shuffle
+        options.sort(() => Math.random() - 0.5);
 
         options.forEach(ing => {
             const btn = document.createElement('button');
             btn.className = 'btn-ingredient';
             btn.innerText = ing;
-            btn.onclick = () => selectIngredient(ing, btn);
+            btn.onclick = () => check(ing, btn);
             list.appendChild(btn);
         });
     }
 
-    // ตรวจสอบสิ่งที่เลือก
-    function selectIngredient(ing, btn) {
-        if (isGameOver) return;
+    function check(ing, btn) {
+        if (isGameOver || btn.classList.contains('correct')) return;
 
         if (currentRecipe.ingredients.includes(ing)) {
-            if (!btn.classList.contains('correct')) {
-                btn.classList.add('correct');
-                score++;
-                updateProgress();
-                if (score === 6) {
-                    winGame();
-                }
+            btn.classList.add('correct');
+            score++;
+            updateProgress();
+            if (score === 6) {
+                isGameOver = true;
+                const msg = document.getElementById('message');
+                msg.innerText = "🎉 เยี่ยม! คุณคือเชฟระดับมือโปร!";
+                msg.style.color = "var(--success)";
+                document.getElementById('btn-back').classList.remove('hidden');
             }
         } else {
+            isGameOver = true;
             btn.classList.add('wrong');
-            loseGame(ing);
+            const msg = document.getElementById('message');
+            msg.innerText = `🤢 พลาด! ${ing} ไม่ใช่ส่วนผสมของ ${currentRecipe.name}`;
+            msg.style.color = "var(--error)";
+            document.getElementById('btn-back').classList.remove('hidden');
+            // ทำปุ่มอื่นให้กดไม่ได้
+            document.querySelectorAll('.btn-ingredient').forEach(b => b.classList.add('disabled'));
         }
     }
 
     function updateProgress() {
-        document.getElementById('progress').innerText = `เลือกวัตถุดิบที่ถูกต้อง: ${score} / 6`;
+        document.getElementById('progress').innerText = `วัตถุดิบที่ถูกต้อง: ${score} / 6`;
     }
 
-    function winGame() {
-        isGameOver = true;
-        const msg = document.getElementById('game-message');
-        msg.innerText = "✨ สุดยอด! คุณทำ " + currentRecipe.name + " สำเร็จแล้ว!";
-        msg.style.color = "green";
-        document.getElementById('btn-retry').classList.remove('hidden');
-    }
-
-    function loseGame(ing) {
-        isGameOver = true;
-        const msg = document.getElementById('game-message');
-        msg.innerText = "❌ พลาดแล้ว! " + ing + " ไม่ใส่ในนี้ ขนมพังหมดเลย!";
-        msg.style.color = "red";
-        document.getElementById('btn-retry').classList.remove('hidden');
-    }
-
-    function resetToMenu() {
+    function goBack() {
         document.getElementById('screen-menu').classList.remove('hidden');
         document.getElementById('screen-game').classList.add('hidden');
     }
 
-    // เริ่มต้นแอป
-    initMenu();
+    // เริ่มต้นหน้าแรก
+    renderMenu('sweet');
 </script>
 
 </body>
